@@ -729,6 +729,84 @@ static func zombie_model(kind: String) -> ZombieRig:
 			box(pole, Vector3(0.02, 0.3, 0.5), Vector3(0, 0.75, -0.26), toon(Color("#c0392b"), {"bands": 2.0}))
 			rig.arm_l.rotation.z = 0.5
 
+		"pole":
+			# tracksuit stripes + the pole he plants before the first hop
+			box(rig.torso, Vector3(0.36, 0.05, 0.05), Vector3(0, 0.34, 0.16), toon(Color("#e8e2d0"), {"outline": false}))
+			box(rig.torso, Vector3(0.36, 0.05, 0.05), Vector3(0, 0.34, -0.16), toon(Color("#e8e2d0"), {"outline": false}))
+			for hip in [rig.hip_l, rig.hip_r]:
+				box(hip, Vector3(0.17, 0.05, 0.05), Vector3(0, -0.34, 0.09), toon(Color("#e8e2d0"), {"outline": false}))
+				box(hip, Vector3(0.17, 0.05, 0.05), Vector3(0, -0.34, -0.09), toon(Color("#e8e2d0"), {"outline": false}))
+			box(rig.head, Vector3(0.2, 0.045, 0.36), Vector3(0, 0.11, 0), toon(Color("#c0392b"), {"outline": false}))
+			rig.arm_l.rotation.z = 1.05
+			var staff := pivot(root, Vector3(0.26, 0.05, -0.34), "Pole")
+			staff.rotation.z = -0.34
+			staff.rotation.x = 0.22
+			cyl(staff, 0.026, 2.05, Vector3(0, 0.95, 0), toon(Color("#c9a86a"), {"bands": 2.0}), Vector3.ZERO, 6)
+			cyl(staff, 0.034, 0.1, Vector3(0, -0.02, 0), toon(Color("#8a7048"), {"bands": 2.0}), Vector3.ZERO, 6)
+
+		"screendoor":
+			# the door hangs off his front arm and takes every pea
+			rig.arm_l.rotation.z = 1.15
+			rig.arm_r.rotation.z = 1.15
+			var door := pivot(root, Vector3(0.44, 0.0, -0.09), "Door")
+			var door_frame := toon(Color("#7d8c84"), {"bands": 2.0, "rim": 0.3})
+			var door_mesh := toon(Color("#a9b6ae"), {"bands": 2.0, "rim": 0.2})
+			box(door, Vector3(0.05, 1.2, 0.78), Vector3(0, 0.63, 0), door_frame)
+			box(door, Vector3(0.03, 1.02, 0.6), Vector3(0.03, 0.63, 0), door_mesh)
+			for i in range(3):
+				box(door, Vector3(0.035, 0.03, 0.62), Vector3(0.05, 0.33 + i * 0.32, 0), door_frame)
+			for i in range(3):
+				box(door, Vector3(0.035, 1.04, 0.03), Vector3(0.05, 0.63, -0.2 + i * 0.2), door_frame)
+			ball(door, 0.05, Vector3(0.08, 0.62, 0.26), toon(Color("#d8b25a"), {"rim": 0.6}), Vector3.ONE, 8, 6)
+
+		"balloon":
+			# he floats: legs hang, the balloon rides above the head
+			for hip in [rig.hip_l, rig.hip_r]:
+				hip.rotation.x = 0.34
+			rig.arm_l.rotation.z = 0.55
+			rig.arm_r.rotation.z = 0.55
+			var balloon := pivot(root, Vector3(0, 1.5, 0), "Balloon")
+			cyl(balloon, 0.012, 1.1, Vector3(0, 0.5, 0), toon(Color("#e8e2d0"), {"outline": false}), Vector3.ZERO, 4)
+			ball(balloon, 0.4, Vector3(0, 1.32, 0), toon(Color("#c8503f"), {"bands": 3.0, "rim": 0.45, "glow": 0.1}),
+				Vector3(1.0, 1.16, 1.0), 14, 10)
+			ball(balloon, 0.09, Vector3(0, 0.98, 0), toon(Color("#a83c30"), {"outline": false}), Vector3(1.0, 0.7, 1.0), 8, 6)
+			for i in range(3):
+				box(balloon, Vector3(0.02, 0.34, 0.02), Vector3(-0.14 + i * 0.14, 0.86, 0.02),
+					toon(Color("#8e6a4a"), {"outline": false}), Vector3(0, 0, -0.3 + i * 0.3))
+
+		"dancer", "backup":
+			# purple suit, wide collar and an afro
+			var suit := toon(Color("#6b4a8f"), {"bands": 2.5, "rim": 0.25})
+			box(rig.torso, Vector3(0.38, 0.54, 0.5), Vector3(0, 0.22, 0), suit)
+			box(rig.torso, Vector3(0.3, 0.06, 0.44), Vector3(0, 0.46, 0), toon(Color("#e8e2d0"), {"outline": false}))
+			box(rig.torso, Vector3(0.14, 0.12, 0.06), Vector3(0.18, 0.4, 0), toon(Color("#d8b25a"), {"outline": false}))
+			ball(rig.head, 0.23, Vector3(-0.02, 0.13, 0), toon(Color("#2c2228"), {"bands": 2.0, "rim": 0.3}),
+				Vector3(1.12, 0.85, 1.12), 14, 9)
+			for s2 in [-1, 1]:
+				ball(rig.head, 0.05, Vector3(0.13, 0.06, 0.062 * s2), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(rig.head, 0.025, Vector3(0.16, 0.055, 0.062 * s2), dark, Vector3.ONE, 6, 4)
+			if kind == "dancer":
+				rig.arm_l.rotation.z = 2.0
+				rig.arm_r.rotation.z = 2.0
+			else:
+				rig.root.scale = Vector3.ONE * 0.94
+
+		"gargantuar":
+			# he is scaled up whole; the telephone pole is the weapon
+			box(rig.torso, Vector3(0.4, 0.34, 0.5), Vector3(0, 0.3, 0), toon(Color("#4a5a48"), {"bands": 2.0}))
+			box(rig.torso, Vector3(0.44, 0.1, 0.54), Vector3(0, 0.12, 0), toon(Color("#3a2f2a"), {"outline": false}))
+			for s2 in [-1, 1]:
+				ball(rig.head, 0.048, Vector3(0.13, 0.06, 0.062 * s2),
+					toon(Color("#ff7a3c"), {"glow": 1.6, "bands": 1.0, "outline": false}), Vector3(1.1, 0.8, 1.0), 8, 6)
+			rig.arm_l.rotation.z = 0.6
+			rig.arm_r.rotation.z = 0.6
+			var club := pivot(root, Vector3(0.3, 0.2, -0.34), "Club")
+			club.rotation.z = -0.42
+			cyl(club, 0.085, 2.0, Vector3(0, 0.85, 0), toon(Color("#8a6a48"), {"bands": 2.5}), Vector3.ZERO, 8)
+			for i in range(2):
+				box(club, Vector3(0.06, 0.05, 0.5), Vector3(0, 1.62 + i * 0.2, 0), toon(Color("#6b5038"), {"bands": 2.0}))
+			cyl(club, 0.11, 0.1, Vector3(0, 0.02, 0), toon(Color("#5a4430"), {"bands": 2.0}), Vector3.ZERO, 8)
+
 	_collect(root, rig.parts)
 	return rig
 

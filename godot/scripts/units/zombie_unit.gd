@@ -27,12 +27,23 @@ var eat_target: PlantUnit
 var body_x := 0.0
 var charmed := false
 var charm_life := 0.0
+## 撑杆跳：剩余可跳次数，跳过去以后就不再吃眼前这株
+var vault_left := 0
+## 气球：离地高度（0 表示正常走路）
+var flying := 0.0
+## 巨人：不啃，直接一棒砸掉
+var smashing := false
 
 var rig: Art.ZombieRig
 var _flash := 0.0
 var _chomp_t := 0.0
 var _gear_lost := false
 var _death_t := 0.0
+var _vault_t := -1.0
+var _vault_from := 0.0
+var _vault_to := 0.0
+var _smash_cd := 0.0
+var _scale := 1.0
 
 
 func setup(p_kind: String, p_lane: int, pos: Vector3, p_dir: float) -> void:
@@ -65,6 +76,20 @@ func setup(p_kind: String, p_lane: int, pos: Vector3, p_dir: float) -> void:
 	rig = Art.zombie_model(kind)
 	add_child(rig.root)
 
+	vault_left = int(def.get("vault", 0))
+	flying = float(def.get("fly", 0.0))
+	smashing = bool(def.get("smash", false))
+	_scale = float(def.get("scale", 1.0))
+	if _scale != 1.0:
+		rig.root.scale = rig.root.scale * _scale
+		cap.radius *= _scale
+		cap.height *= _scale
+		cs.position = Vector3(0, 0.78 * _scale, 0)
+	if flying > 0.0:
+		rig.root.position.y = flying
+		# a balloon zombie never eats: it sails over the whole lawn
+		dps = 0.0
+
 
 func _process(delta: float) -> void:
 	if rig == null:
@@ -88,6 +113,8 @@ func _process(delta: float) -> void:
 		rig.arm_l.rotation.x = sin(phase + 0.4) * 0.12
 	if rig.arm_r:
 		rig.arm_r.rotation.x = -sin(phase + 0.4) * 0.12
+	if flying > 0.0 and dying <= 0.0:
+		rig.root.position.y = flying + sin(phase * 2.4) * 0.09
 	if rig.head and dying <= 0.0:
 		rig.head.rotation.z = sin(phase * 0.5) * 0.08
 		rig.head.rotation.x = -0.12 if eating else 0.0
@@ -150,7 +177,58 @@ func tick(delta: float, m) -> void:
 			start_dying(true)
 		return
 
+	# --- 撑杆跳：落到第一株植物后面，之后照常啃
+	if _vault_t >= 0.0:
+		_vault_t += delta
+		var vk: float = clampf(_vault_t / 0.62, 0.0, 1.0)
+		body_x = lerpf(_vault_from, _vault_to, vk)
+		global_position.x = body_x
+		rig.root.position.y = sin(vk * PI) * 1.15 * _scale
+		phase += delta * 6.0
+		if vk >= 1.0:
+			_vault_t = -1.0
+			rig.root.position.y = 0.0
+		return
+
 	var target = m.plant_in_front(self)
+	_smash_cd = maxf(0.0, _smash_cd - delta)
+
+	if target != null and vault_left > 0 and not flying > 0.0:
+		# plant the pole and hop clean over it
+		var gap: float = ((target.global_position.x - body_x) * dir) + 0.95
+		vault_left -= 1
+		_vault_t = 0.0
+		_vault_from = body_x
+		_vault_to = body_x + dir * maxf(gap, 1.1)
+		eating = false
+		App.sfx_at("shove", global_position + Vector3(0, 1.0, 0), -6.0, 1.35)
+		return
+
+	if target != null and smashing and _smash_cd <= 0.0:
+		# one swing flattens whatever is in front, then he keeps walking
+		_smash_cd = 1.15
+		eating = true
+		eat_target = target
+		phase += 1.2
+		var tw := create_tween()
+		tw.tween_property(rig.root, "rotation:z", -0.55, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(rig.root, "rotation:z", 0.0, 0.22).set_trans(Tween.TRANS_SINE)
+		App.sfx_at("explode", global_position + Vector3(0, 0.6, 0), -8.0, 1.5)
+		target.take_damage(99999.0)
+		m.smash_fx(target.global_position)
+		return
+
+	if flying > 0.0:
+		eating = false
+		eat_target = null
+		var air_step := speed * slow * delta
+		body_x += dir * air_step
+		global_position.x = body_x
+		phase += air_step * 7.5
+		if (dir < 0.0 and body_x < m.goal_x) or (dir > 0.0 and body_x > m.goal_x):
+			m.breach(self)
+		return
+
 	if target != null:
 		eating = true
 		eat_target = target
@@ -212,7 +290,7 @@ func chill(duration := 5.0) -> void:
 func strip_metal() -> bool:
 	if dead or dying > 0.0 or armor <= 0.0:
 		return false
-	if not (kind in ["bucket", "football"]):
+	if not (kind in ["bucket", "football", "screendoor"]):
 		return false
 	armor = 0.0
 	_gear_lost = true
@@ -232,10 +310,10 @@ func _apply_charm() -> void:
 			p.material_overlay = m
 
 
-func damage(amount: float, crit := false) -> void:
+func damage(amount: float, crit := false, ignore_armor := false) -> void:
 	if dead or dying > 0.0:
 		return
-	if armor > 0.0:
+	if armor > 0.0 and not ignore_armor:
 		var absorbed: float = min(armor, amount)
 		armor -= absorbed
 		amount -= absorbed
@@ -263,7 +341,7 @@ func _update_gear() -> void:
 	var drop := hp < max_hp * 0.5
 	if max_armor > 0.0 and armor <= 0.0:
 		drop = true
-	if drop and kind in ["cone", "bucket", "football"]:
+	if drop and kind in ["cone", "bucket", "football", "screendoor"]:
 		_gear_lost = true
 		if rig.gear:
 			var tw := create_tween()

@@ -4,6 +4,7 @@ extends CanvasLayer
 ## Title screen: level select over a slow pan of the garden.
 
 signal level_chosen(id: String)
+signal endless_chosen
 signal continue_pressed
 signal settings_changed
 signal quit_pressed
@@ -17,6 +18,67 @@ var _invert: CheckBox
 var _shake: CheckBox
 var _continue: Button
 var _hero: PlantIcon
+var _endless: EndlessCard
+var _music: HSlider
+
+
+## The endless run gets its own card: it has no wave count and no stars, so the
+## level-card layout does not fit it.
+class EndlessCard extends Control:
+	signal chosen
+
+	var best := 0
+	var _hover := false
+	var _bg: StyleBoxFlat
+	var _bg_hover: StyleBoxFlat
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		_bg = StyleBoxFlat.new()
+		_bg.bg_color = Color(0.10, 0.07, 0.06, 0.93)
+		_bg.set_corner_radius_all(16)
+		_bg.set_border_width_all(1)
+		_bg.border_color = Color(0.85, 0.55, 0.35, 0.28)
+		_bg.shadow_color = Color(0, 0, 0, 0.4)
+		_bg.shadow_size = 10
+		_bg_hover = _bg.duplicate()
+		_bg_hover.bg_color = Color(0.18, 0.11, 0.08, 0.96)
+		_bg_hover.border_color = Color(1.0, 0.72, 0.4, 0.8)
+		mouse_entered.connect(func() -> void:
+			_hover = true
+		)
+		mouse_exited.connect(func() -> void:
+			_hover = false
+		)
+
+	func _process(_d: float) -> void:
+		queue_redraw()
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton:
+			var mb := event as InputEventMouseButton
+			if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+				chosen.emit()
+				accept_event()
+
+	func _draw() -> void:
+		draw_style_box(_bg_hover if _hover else _bg, Rect2(Vector2.ZERO, size))
+		draw_rect(Rect2(Vector2(0, 16), Vector2(5, size.y - 32)), Color("#e8804a"), true)
+		# a big infinity mark, half hidden behind the text block
+		draw_string(App.font_bold, Vector2(size.x - 210, size.y * 0.5 + 54), "∞",
+			HORIZONTAL_ALIGNMENT_RIGHT, 190, 118, Color(1.0, 0.62, 0.38, 0.13))
+
+		draw_string(App.font_body, Vector2(30, 34), "S U R V I V A L", HORIZONTAL_ALIGNMENT_LEFT, 300, 12,
+			Color(1.0, 0.7, 0.45, 0.75))
+		draw_string(App.font_bold, Vector2(30, 74), "无尽模式", HORIZONTAL_ALIGNMENT_LEFT, 300, 32, Color("#ffe6c8"))
+		draw_string(App.font_body, Vector2(30, 104), "没有终点，只有下一波", HORIZONTAL_ALIGNMENT_LEFT, 340, 15,
+			Color(1, 1, 1, 0.55))
+		var rec := "最佳记录 %d 波" % best if best > 0 else "还没有记录"
+		draw_string(App.font_body, Vector2(30, 132), rec, HORIZONTAL_ALIGNMENT_LEFT, 300, 14,
+			Color(1.0, 0.82, 0.5, 0.9) if best > 0 else Color(1, 1, 1, 0.35))
+		draw_string(App.font_body, Vector2(30, 158), "点击开始 →" if _hover else "会越来越难",
+			HORIZONTAL_ALIGNMENT_LEFT, 300, 13,
+			Color(1.0, 0.88, 0.55, 0.95) if _hover else Color(1, 1, 1, 0.3))
 
 
 class LevelCard extends Control:
@@ -154,6 +216,16 @@ func _ready() -> void:
 		c.size = Vector2(580, 98)
 		cards.append(c)
 
+	_endless = EndlessCard.new()
+	_endless.position = Vector2(700, 256)
+	_endless.size = Vector2(520, 180)
+	_endless.tooltip_text = "无尽模式"
+	_endless.chosen.connect(func() -> void:
+		App.sfx("click", -4.0)
+		endless_chosen.emit()
+	)
+	root.add_child(_endless)
+
 	_continue = Button.new()
 	_continue.text = "继续游戏"
 	_continue.position = Vector2(90, 706)
@@ -176,7 +248,7 @@ func _ready() -> void:
 	root.add_child(qbtn)
 
 	var hint := Label.new()
-	hint.text = "点击关卡 → 挑选出战植物 · WASD 移动 · 左键种植 · 1-9 选卡 · F 推开僵尸 · E 收阳光"
+	hint.text = "点击关卡 → 挑选出战植物 · 无尽模式没有终点 · WASD 移动 · 左键种植 · 1-9 选卡"
 	hint.position = Vector2(92, 780)
 	hint.add_theme_font_size_override("font_size", 13)
 	hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.4))
@@ -200,7 +272,7 @@ func _ready() -> void:
 	root.add_child(_hero)
 
 	var note := Label.new()
-	note.text = "%d 种植物 · %d 种僵尸 · 一座完整的院子" % [Data.PLANTS.size(), Data.ZOMBIES.size()]
+	note.text = "%d 种植物 · %d 种僵尸 · 一座完整的院子" % [Data.PLANTS.size(), Data.zombie_kinds().size()]
 	note.position = Vector2(1240, 800)
 	note.add_theme_font_size_override("font_size", 12)
 	note.add_theme_color_override("font_color", Color(1, 1, 1, 0.35))
@@ -227,6 +299,8 @@ func refresh() -> void:
 			any = true
 	_continue.visible = any
 	_continue.text = "继续游戏"
+	if _endless:
+		_endless.best = App.endless_best()
 	if _hero:
 		_hero.kind = "peashooter"
 
@@ -251,8 +325,8 @@ func _build_settings() -> void:
 
 	var panel := Panel.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.position = Vector2(-260, -210)
-	panel.size = Vector2(520, 420)
+	panel.position = Vector2(-260, -240)
+	panel.size = Vector2(520, 480)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.07, 0.12, 0.09, 0.98)
 	sb.set_corner_radius_all(20)
@@ -267,7 +341,7 @@ func _build_settings() -> void:
 
 	var v := VBoxContainer.new()
 	v.position = Vector2(26, 22)
-	v.size = Vector2(468, 376)
+	v.size = Vector2(468, 436)
 	v.add_theme_constant_override("separation", 14)
 	panel.add_child(v)
 
@@ -313,6 +387,26 @@ func _build_settings() -> void:
 	vrow.add_child(_vol)
 	v.add_child(vrow)
 
+	var mrow := HBoxContainer.new()
+	mrow.add_theme_constant_override("separation", 12)
+	var ml := Label.new()
+	ml.text = "音乐音量"
+	ml.custom_minimum_size = Vector2(130, 0)
+	mrow.add_child(ml)
+	_music = HSlider.new()
+	_music.min_value = 0.0
+	_music.max_value = 1.0
+	_music.step = 0.02
+	_music.value = App.settings.get("music", 0.7)
+	_music.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_music.value_changed.connect(func(x: float) -> void:
+		App.settings["music"] = x
+		App.refresh_music_volume()
+		settings_changed.emit()
+	)
+	mrow.add_child(_music)
+	v.add_child(mrow)
+
 	_shake = CheckBox.new()
 	_shake.text = "屏幕震动"
 	_shake.button_pressed = App.settings["shake"]
@@ -342,5 +436,6 @@ func _open_settings() -> void:
 	_settings.visible = true
 	_sens.value = App.settings["sensitivity"]
 	_vol.value = App.settings["volume"]
+	_music.value = float(App.settings.get("music", 0.7))
 	_shake.button_pressed = App.settings["shake"]
 	_invert.button_pressed = App.settings["invert_y"]

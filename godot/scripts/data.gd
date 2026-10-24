@@ -187,6 +187,24 @@ const ZOMBIES := {
 	"football": {
 		"name": "橄榄球僵尸", "hp": 700.0, "speed": 0.62, "dps": 80.0, "armor": 800.0,
 	},
+	"pole": {
+		"name": "撑杆僵尸", "hp": 500.0, "speed": 0.70, "dps": 60.0, "vault": 1,
+	},
+	"screendoor": {
+		"name": "铁门僵尸", "hp": 280.0, "speed": 0.38, "dps": 60.0, "armor": 420.0,
+	},
+	"balloon": {
+		"name": "气球僵尸", "hp": 240.0, "speed": 0.52, "dps": 60.0, "fly": 2.05,
+	},
+	"dancer": {
+		"name": "舞王僵尸", "hp": 380.0, "speed": 0.50, "dps": 60.0, "summon": 4,
+	},
+	"backup": {
+		"name": "伴舞僵尸", "hp": 240.0, "speed": 0.52, "dps": 60.0, "hidden": true,
+	},
+	"gargantuar": {
+		"name": "巨人僵尸", "hp": 3400.0, "speed": 0.22, "dps": 0.0, "smash": true, "scale": 1.85,
+	},
 }
 
 ## Canonical order of the seed bank, grouped: economy → shooters → defence →
@@ -239,14 +257,14 @@ const LEVELS := [
 		"waves": [
 			{"at": 14.0, "label": "僵尸出现了", "spawns": [{"kind": "basic", "count": 2, "gap": 5.0}]},
 			{"at": 40.0, "label": "路障僵尸", "spawns": [{"kind": "cone", "count": 2, "gap": 5.0}]},
-			{"at": 70.0, "label": "报纸僵尸", "spawns": [{"kind": "newspaper"}, {"kind": "basic", "count": 2, "gap": 3.0}]},
-			{"at": 100.0, "label": "铁桶僵尸", "spawns": [{"kind": "bucket"}, {"kind": "cone", "count": 2, "gap": 4.0}]},
+			{"at": 70.0, "label": "撑杆僵尸", "spawns": [{"kind": "pole"}, {"kind": "newspaper"}, {"kind": "basic", "count": 2, "gap": 3.0}]},
+			{"at": 100.0, "label": "铁桶僵尸", "spawns": [{"kind": "bucket"}, {"kind": "screendoor"}, {"kind": "cone", "count": 2, "gap": 4.0}]},
 			{"at": 135.0, "label": "一大波僵尸正在接近", "big": true, "spawns": [
 				{"kind": "flag"}, {"kind": "bucket", "count": 2, "gap": 5.0}, {"kind": "cone", "count": 2, "gap": 3.0},
 			]},
 			{"at": 170.0, "label": "最后一波", "big": true, "spawns": [
-				{"kind": "bucket", "count": 2, "gap": 4.0}, {"kind": "cone", "count": 2, "gap": 3.0},
-				{"kind": "basic", "count": 3, "gap": 2.0},
+				{"kind": "bucket", "count": 2, "gap": 4.0}, {"kind": "screendoor"}, {"kind": "pole"},
+				{"kind": "cone", "count": 2, "gap": 3.0}, {"kind": "basic", "count": 3, "gap": 2.0},
 			]},
 		],
 	},
@@ -266,14 +284,16 @@ const LEVELS := [
 			{"at": 18.0, "label": "僵尸出现了", "spawns": [{"kind": "basic", "count": 2, "gap": 6.0}]},
 			{"at": 48.0, "label": "路障僵尸", "spawns": [{"kind": "cone"}, {"kind": "basic"}]},
 			{"at": 80.0, "label": "泳池也挡不住", "spawns": [
-				{"kind": "basic", "lane": 2}, {"kind": "cone", "lane": 3}, {"kind": "basic", "count": 2, "gap": 4.0},
+				{"kind": "basic", "lane": 2}, {"kind": "cone", "lane": 3}, {"kind": "balloon", "lane": 2},
+				{"kind": "basic", "count": 2, "gap": 4.0},
 			]},
-			{"at": 112.0, "label": "铁桶僵尸", "spawns": [{"kind": "bucket"}, {"kind": "cone", "count": 2, "gap": 4.0}]},
+			{"at": 112.0, "label": "铁桶僵尸", "spawns": [{"kind": "bucket"}, {"kind": "screendoor"}, {"kind": "cone", "count": 2, "gap": 4.0}]},
 			{"at": 148.0, "label": "一大波僵尸正在接近", "big": true, "spawns": [
 				{"kind": "flag"}, {"kind": "bucket", "count": 2, "gap": 5.0}, {"kind": "basic", "count": 4, "gap": 2.0},
 			]},
 			{"at": 185.0, "label": "最后一波", "big": true, "spawns": [
 				{"kind": "bucket", "count": 3, "gap": 4.0}, {"kind": "cone", "count": 3, "gap": 3.0},
+				{"kind": "balloon", "count": 2, "gap": 4.0},
 			]},
 		],
 	},
@@ -293,17 +313,71 @@ const LEVELS := [
 			{"at": 20.0, "label": "僵尸出现了", "spawns": [{"kind": "basic", "count": 2, "gap": 4.0}]},
 			{"at": 50.0, "label": "路障僵尸", "spawns": [{"kind": "cone", "count": 2, "gap": 3.0}]},
 			{"at": 82.0, "label": "报纸僵尸", "spawns": [{"kind": "newspaper", "count": 2, "gap": 5.0}, {"kind": "basic"}]},
-			{"at": 115.0, "label": "铁桶僵尸", "spawns": [{"kind": "bucket", "count": 2, "gap": 4.0}]},
+			{"at": 115.0, "label": "舞王僵尸", "spawns": [{"kind": "dancer"}, {"kind": "bucket", "count": 2, "gap": 4.0}]},
 			{"at": 150.0, "label": "一大波僵尸正在接近", "big": true, "spawns": [
 				{"kind": "flag"}, {"kind": "football"}, {"kind": "bucket", "count": 2, "gap": 4.0},
 			]},
 			{"at": 190.0, "label": "最后一波", "big": true, "spawns": [
-				{"kind": "football"}, {"kind": "bucket", "count": 3, "gap": 3.0},
-				{"kind": "cone", "count": 3, "gap": 2.0},
+				{"kind": "gargantuar"}, {"kind": "football"}, {"kind": "bucket", "count": 3, "gap": 3.0},
+				{"kind": "balloon", "count": 2, "gap": 3.0}, {"kind": "cone", "count": 3, "gap": 2.0},
 			]},
 		],
 	},
 ]
+
+
+## Endless mode. `waves` is deliberately empty: Match generates them from
+## ENDLESS_ROSTER, so a run never runs out of content.
+const ENDLESS := {
+	"id": "endless",
+	"name": "无尽模式",
+	"subtitle": "没有终点，只有下一波",
+	"yard": "front",
+	"sky": "noon",
+	"sun": 250,
+	"sky_sun": 8.0,
+	"par": 0.0,
+	"seeds": ["sunflower", "peashooter", "wallnut", "repeater", "snowpea", "kernelpult",
+		"melonpult", "pumpkin", "cherrybomb", "jalapeno", "threepeater", "tallnut"],
+	"slots": 9,
+	"must": ["sunflower", "peashooter"],
+	"waves": [],
+	"endless": true,
+	"first_wave": 18.0,
+}
+
+## Per-wave budget buys from this table. `from` is the first wave the kind may
+## appear in, `weight` biases the random pick, `cost` is charged to the budget.
+const ENDLESS_ROSTER := [
+	{"kind": "basic", "cost": 1.0, "from": 1, "weight": 3.0},
+	{"kind": "cone", "cost": 2.0, "from": 2, "weight": 2.4},
+	{"kind": "pole", "cost": 2.5, "from": 3, "weight": 1.5},
+	{"kind": "newspaper", "cost": 2.0, "from": 4, "weight": 1.2},
+	{"kind": "bucket", "cost": 3.0, "from": 5, "weight": 1.8},
+	{"kind": "screendoor", "cost": 3.2, "from": 6, "weight": 1.3},
+	{"kind": "balloon", "cost": 2.6, "from": 7, "weight": 1.1},
+	{"kind": "football", "cost": 4.0, "from": 9, "weight": 1.0},
+	{"kind": "dancer", "cost": 5.0, "from": 11, "weight": 0.9},
+	{"kind": "gargantuar", "cost": 10.0, "from": 14, "weight": 0.55},
+]
+
+
+## Roster entries legal on `wave` (1-based).
+static func endless_roster(wave: int) -> Array:
+	var out: Array = []
+	for e in ENDLESS_ROSTER:
+		if int(e["from"]) <= wave:
+			out.append(e)
+	return out if out.size() > 0 else [ENDLESS_ROSTER[0]]
+
+
+## Kinds that can actually appear as a wave (backup dancers are summoned).
+static func zombie_kinds() -> Array:
+	var out: Array = []
+	for k in ZOMBIES.keys():
+		if not bool(ZOMBIES[k].get("hidden", false)):
+			out.append(k)
+	return out
 
 
 static func plant(kind: String) -> Dictionary:
@@ -315,6 +389,8 @@ static func zombie(kind: String) -> Dictionary:
 
 
 static func level(id: String) -> Dictionary:
+	if id == "endless":
+		return ENDLESS
 	for l in LEVELS:
 		if l["id"] == id:
 			return l

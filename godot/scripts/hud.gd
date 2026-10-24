@@ -31,6 +31,7 @@ var _end_title: Label
 var _end_stats: Label
 var _end_stars: Array = []
 var _next_btn: Button
+var _retry_btn: Button
 var _banner_tween: Tween
 var _level_name := ""
 
@@ -81,6 +82,8 @@ class WavePanel extends Control:
 	var progress := 0.0
 	var waves := 5
 	var alive := 0
+	var endless := false
+	var wave_num := 0
 	var _bg: StyleBoxFlat
 	var _t := 0.0
 
@@ -93,17 +96,23 @@ class WavePanel extends Control:
 		_bg.set_border_width_all(1)
 		_bg.border_color = Color(0.7, 0.85, 0.6, 0.22)
 
-	func set_data(p_level: String, p_prog: float, p_waves: int, p_alive: int) -> void:
+	func set_data(p_level: String, p_prog: float, p_waves: int, p_alive: int,
+			p_endless := false, p_wave := 0) -> void:
 		level_name = p_level
 		progress = p_prog
 		waves = max(1, p_waves)
 		alive = p_alive
+		endless = p_endless
+		wave_num = p_wave
 		queue_redraw()
 
 	func _draw() -> void:
 		draw_style_box(_bg, Rect2(Vector2.ZERO, size))
 		var f: Font = App.font_bold
-		draw_string(f, Vector2(18, 24), level_name, HORIZONTAL_ALIGNMENT_LEFT, 260, 16, Color("#f6eedb"))
+		var head := level_name
+		if endless:
+			head = "%s · 第 %d 波" % [level_name, wave_num]
+		draw_string(f, Vector2(18, 24), head, HORIZONTAL_ALIGNMENT_LEFT, 300, 16, Color("#f6eedb"))
 		draw_string(App.font_body, Vector2(size.x - 130, 24), "僵尸 %d" % alive, HORIZONTAL_ALIGNMENT_RIGHT, 112, 13,
 			Color(1.0, 0.82, 0.62) if alive > 0 else Color(1, 1, 1, 0.5))
 
@@ -113,15 +122,20 @@ class WavePanel extends Control:
 		if fill_w > 0.5:
 			draw_rect(Rect2(bar.position, Vector2(fill_w, bar.size.y)), Color("#7cbb5c"), true)
 			draw_rect(Rect2(bar.position, Vector2(fill_w, bar.size.y * 0.45)), Color(1, 1, 1, 0.16), true)
-		for i in range(waves + 1):
-			var x := bar.position.x + bar.size.x * float(i) / float(waves)
-			draw_line(Vector2(x, bar.position.y - 2), Vector2(x, bar.position.y + bar.size.y + 2),
-				Color(1, 1, 1, 0.22), 1.0)
-		# the flag for each wave that has started
-		var started := int(round(progress * waves))
-		for i in range(started):
-			var x2 := bar.position.x + bar.size.x * float(i) / float(waves) + 3.0
-			draw_line(Vector2(x2, bar.position.y - 5), Vector2(x2, bar.position.y + bar.size.y + 4), Color("#f2c14e"), 2.0)
+		if endless:
+			# no fixed wave count: the bar is the countdown to the next wave
+			draw_string(App.font_body, Vector2(size.x - 168, 50), "下一波", HORIZONTAL_ALIGNMENT_RIGHT, 40, 11,
+				Color(1, 1, 1, 0.4))
+		else:
+			for i in range(waves + 1):
+				var x := bar.position.x + bar.size.x * float(i) / float(waves)
+				draw_line(Vector2(x, bar.position.y - 2), Vector2(x, bar.position.y + bar.size.y + 2),
+					Color(1, 1, 1, 0.22), 1.0)
+			# the flag for each wave that has started
+			var started := int(round(progress * waves))
+			for i in range(started):
+				var x2 := bar.position.x + bar.size.x * float(i) / float(waves) + 3.0
+				draw_line(Vector2(x2, bar.position.y - 5), Vector2(x2, bar.position.y + bar.size.y + 4), Color("#f2c14e"), 2.0)
 
 
 class Reticle extends Control:
@@ -426,7 +440,8 @@ func _process(delta: float) -> void:
 	if match_ref == null or not is_instance_valid(match_ref):
 		return
 	_sun.target = float(match_ref.sun)
-	_wave.set_data(_level_name, match_ref.progress(), match_ref.level["waves"].size(), match_ref.zombies.size())
+	_wave.set_data(_level_name, match_ref.progress(), match_ref.level["waves"].size(),
+		match_ref.zombies.size(), match_ref.endless, match_ref.endless_wave)
 	_hint.text = match_ref.hint_text()
 
 	var slots: Array = match_ref.seed_slots()
@@ -695,9 +710,9 @@ func _build_end() -> void:
 	row.add_theme_constant_override("separation", 10)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 
-	var retry := _button("重玩本关", func() -> void: retry_signal())
-	retry.custom_minimum_size = Vector2(150, 46)
-	row.add_child(retry)
+	_retry_btn = _button("重玩本关", func() -> void: retry_signal())
+	_retry_btn.custom_minimum_size = Vector2(150, 46)
+	row.add_child(_retry_btn)
 	_next_btn = _button("下一关", func() -> void: next_pressed.emit())
 	_next_btn.custom_minimum_size = Vector2(150, 46)
 	row.add_child(_next_btn)
@@ -717,21 +732,44 @@ func show_end(won: bool, stats: Dictionary) -> void:
 	_hint.visible = false
 	_reticle.visible = false
 
-	_end_title.text = "草坪安全了！" if won else "僵尸吃掉了脑子……"
-	_end_title.add_theme_color_override("font_color", Color("#ffe08a") if won else Color("#ff9d8a"))
+	var endless := bool(stats.get("endless", false))
+	var waves := int(stats.get("wave", 0))
+	if endless:
+		_retry_btn.text = "再来一局"
+		_end_title.text = "你守到了第 %d 波" % waves
+		if bool(stats.get("new_record", false)):
+			_end_title.text += "　新纪录"
+	else:
+		_retry_btn.text = "重玩本关"
+		_end_title.text = "草坪安全了！" if won else "僵尸吃掉了脑子……"
+	var title_col := Color("#ff9d8a")
+	if endless or won:
+		title_col = Color("#ffe08a")
+	_end_title.add_theme_color_override("font_color", title_col)
 
 	var stars := int(stats.get("stars", 0))
 	for i in range(_end_stars.size()):
 		var s: Label = _end_stars[i]
+		s.visible = not endless
 		s.add_theme_color_override("font_color", Color("#f2c14e") if i < stars else Color(1, 1, 1, 0.16))
 
-	_end_stats.text = "用时 %s    击杀 %d    种植 %d\n剩余小推车 %d    收集阳光 %d" % [
-		fmt_time(float(stats.get("time", 0.0))),
-		int(stats.get("kills", 0)),
-		int(stats.get("plants", 0)),
-		int(stats.get("mowers", 0)),
-		int(stats.get("sun", 0)),
-	]
+	if endless:
+		_end_stats.text = "撑过 %d 波    击杀 %d    种植 %d\n存活 %s    收集阳光 %d\n最佳记录 %d 波" % [
+			waves,
+			int(stats.get("kills", 0)),
+			int(stats.get("plants", 0)),
+			fmt_time(float(stats.get("time", 0.0))),
+			int(stats.get("sun", 0)),
+			int(stats.get("best", waves)),
+		]
+	else:
+		_end_stats.text = "用时 %s    击杀 %d    种植 %d\n剩余小推车 %d    收集阳光 %d" % [
+			fmt_time(float(stats.get("time", 0.0))),
+			int(stats.get("kills", 0)),
+			int(stats.get("plants", 0)),
+			int(stats.get("mowers", 0)),
+			int(stats.get("sun", 0)),
+		]
 	_next_btn.visible = bool(stats.get("has_next", false)) and won
 	_end.modulate.a = 0.0
 	var tw := create_tween()

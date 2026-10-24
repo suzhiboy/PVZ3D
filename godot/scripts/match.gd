@@ -22,6 +22,11 @@ var state := "playing"
 var time := 0.0
 var wave_index := 0
 var wave_label := ""
+## 无尽模式：波次由 `_endless_tick()` 现算，`level["waves"]` 是空的
+var endless := false
+var endless_wave := 0
+var next_wave_t := 0.0
+var wave_interval := 24.0
 
 var plants: Dictionary = {}
 var pads: Dictionary = {}
@@ -30,6 +35,7 @@ var craters: Dictionary = {}
 var _crater_nodes: Dictionary = {}
 var lobs: Array = []
 var escape_x := 0.0
+var _summoning := false
 var zombies: Array = []
 var peas: Array = []
 var suns: Array = []
@@ -63,6 +69,9 @@ func setup(p_level: Dictionary, p_player: PlayerController, p_world: WorldBuilde
 		shake_cb: Callable = Callable(), p_seeds: Array = []) -> void:
 	level = p_level
 	seeds = p_seeds.duplicate() if p_seeds.size() > 0 else Array(level["seeds"])
+	var slot_cap := int(level.get("slots", 9))
+	if seeds.size() > slot_cap:
+		seeds = seeds.slice(0, slot_cap)
 	yard = Data.yard(str(level["yard"]))
 	yard_name = str(yard["id"])
 	rows = int(yard["rows"])
@@ -75,6 +84,7 @@ func setup(p_level: Dictionary, p_player: PlayerController, p_world: WorldBuilde
 	world = p_world
 	_shake_cb = shake_cb
 
+	endless = bool(level.get("endless", false))
 	_build_mowers()
 	_build_queue()
 	_build_helpers()
@@ -103,6 +113,12 @@ func _build_mowers() -> void:
 
 
 func _build_queue() -> void:
+	if endless:
+		# no scripted queue — waves are generated while the match runs
+		spawn_queue = []
+		next_wave_t = float(level.get("first_wave", 18.0))
+		wave_interval = 12.0
+		return
 	var q: Array = []
 	for wi in range(level["waves"].size()):
 		var w: Dictionary = level["waves"][wi]
@@ -513,7 +529,8 @@ func _on_lob_landed(pos: Vector3, lane: int, dmg: float, kind: String, butter: b
 				best = d
 				direct = z
 		if direct != null:
-			direct.damage(dmg)
+			# the melon comes down from above, so the door does not stop it
+			direct.damage(dmg, false, true)
 		for z in zombies_in_radius(pos, radius):
 			if z == direct:
 				continue
@@ -528,7 +545,8 @@ func _on_lob_landed(pos: Vector3, lane: int, dmg: float, kind: String, butter: b
 			hit = z
 			break
 	if hit != null:
-		hit.damage(dmg)
+		# 抛射物走的是抛物线，会越过铁门直接砸到头
+		hit.damage(dmg, false, true)
 		if butter:
 			hit.butter(4.5)
 			_burst(hit.global_position + Vector3(0, 1.1, 0), Color("#fff3b0"), 14, 2.2, 0.09)
@@ -666,6 +684,12 @@ func burn_row(row: int) -> void:
 	_burst(Vector3(cx, 0.4, z_fire), Color("#ff8a3d"), 40, 4.0, 0.16)
 
 
+## 巨人一棒子把植物砸成木屑
+func smash_fx(pos: Vector3) -> void:
+	_burst(pos + Vector3(0, 0.4, 0), Color("#b08a52"), 20, 3.4, 0.11)
+	player.add_shake(0.45)
+
+
 func devour(z: ZombieUnit) -> void:
 	if not is_instance_valid(z):
 		return
@@ -743,6 +767,15 @@ func spawn_zombie(kind: String, lane: int) -> void:
 	add_child(z)
 	z.died.connect(func() -> void: stat_kills += 1)
 	zombies.append(z)
+	var summon := int(Data.zombie(kind).get("summon", 0))
+	if summon > 0 and not _summoning:
+		_summoning = true
+		for i in range(summon):
+			var off := (i - (summon - 1) * 0.5)
+			var l2: int = clampi(lane + int(signf(off)) * (1 if absf(off) > 0.6 else 0), 0, rows - 1)
+			spawn_zombie("backup", l2)
+		_summoning = false
+		App.sfx_at("groan2", z.global_position + Vector3(0, 1.3, 0), -3.0, 0.85)
 	App.sfx_at("groan1", z.global_position + Vector3(0, 1.2, 0), -6.0, randf_range(0.85, 1.1))
 
 
@@ -750,6 +783,8 @@ func _spawn_waves() -> void:
 	while spawn_queue.size() > 0 and float(spawn_queue[0]["t"]) <= time:
 		var s: Dictionary = spawn_queue.pop_front()
 		spawn_zombie(str(s["kind"]), int(s["lane"]))
+		if endless:
+			continue
 		var wi := int(s["wave"])
 		if wi >= wave_index:
 			wave_index = wi + 1
@@ -761,6 +796,62 @@ func _spawn_waves() -> void:
 				App.sfx("wave", -2.0)
 			else:
 				App.sfx("select", -12.0, 0.8)
+
+
+# --- endless waves ---------------------------------------------------------
+
+
+
+func _endless_step() -> void:
+	if not endless or state != "playing":
+		return
+	if time < next_wave_t:
+		return
+	_spawn_endless_wave()
+
+
+## One wave: turn a growing budget into zombies, then schedule the next one.
+func _spawn_endless_wave() -> void:
+	endless_wave += 1
+	wave_index = endless_wave
+	var w := endless_wave
+	var roster := Data.endless_roster(w)
+	# soft ramp: a solid static wall should hold past wave 20, a lazy one should not
+	var budget := 2.5 + w * 1.15 + pow(w, 1.32) * 0.25
+	var at := time + 0.15
+	var placed := 0
+	while budget > 0.6 and placed < 44:
+		var entry: Dictionary = _pick_endless_kind(roster)
+		budget -= float(entry["cost"])
+		# keep one gargantuar per wave until the roster gets thick
+		if str(entry["kind"]) == "gargantuar" and placed > 0 and w < 18:
+			continue
+		spawn_queue.append({
+			"t": at,
+			"kind": str(entry["kind"]),
+			"lane": randi() % rows,
+			"wave": w - 1,
+		})
+		placed += 1
+		at += randf_range(0.4, 1.15)
+	wave_interval = maxf(8.5, 24.0 - w * 0.46)
+	next_wave_t = time + wave_interval
+	wave_label = "第 %d 波" % w
+	var big := w % 5 == 0
+	wave_banner.emit(wave_label, big)
+	App.sfx("wave" if big else "select", -2.0 if big else -12.0, 1.0 if big else 0.8)
+
+
+func _pick_endless_kind(roster: Array) -> Dictionary:
+	var total := 0.0
+	for e in roster:
+		total += float(e["weight"])
+	var r := randf() * total
+	for e in roster:
+		r -= float(e["weight"])
+		if r <= 0.0:
+			return e
+	return roster[roster.size() - 1]
 
 
 # --- tick ------------------------------------------------------------------
@@ -779,6 +870,7 @@ func update(delta: float) -> void:
 			cooldowns[k] = v
 
 	_spawn_waves()
+	_endless_step()
 
 	for key in plants.keys():
 		var p = plants[key]
@@ -925,6 +1017,8 @@ func _cleanup() -> void:
 func _check_end() -> void:
 	if state != "playing":
 		return
+	if endless:
+		return
 	var live := zombies.filter(func(z): return is_instance_valid(z) and not z.dead and not z.charmed)
 	if spawn_queue.size() == 0 and live.size() == 0 and time > 5.0:
 		state = "won"
@@ -976,6 +1070,10 @@ func _burst(pos: Vector3, color: Color, amount: int, speed: float, size: float) 
 # --- hud -------------------------------------------------------------------
 
 func progress() -> float:
+	if endless:
+		# in endless the bar becomes a "next wave incoming" gauge
+		var left := next_wave_t - time
+		return 1.0 - clampf(left / maxf(wave_interval, 0.001), 0.0, 1.0)
 	var total: int = level["waves"].size()
 	if total == 0:
 		return 0.0
@@ -1036,4 +1134,6 @@ func snapshot() -> Dictionary:
 		"wave": wave_index,
 		"mowers": mowers.filter(func(m): return is_instance_valid(m) and not m.spent).size(),
 		"level": level["id"],
+		"endless": endless,
+		"endless_wave": endless_wave,
 	}

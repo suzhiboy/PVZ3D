@@ -33,6 +33,7 @@ func _ready() -> void:
 	add_child(menu)
 	menu.level_chosen.connect(_choose_level)
 	menu.continue_pressed.connect(_continue)
+	menu.endless_chosen.connect(func() -> void: _choose_level("endless"))
 	menu.settings_changed.connect(_apply_settings)
 	menu.quit_pressed.connect(func() -> void: get_tree().quit())
 
@@ -156,6 +157,10 @@ func _run_test(which: String) -> void:
 			_flow_test()
 		"plants":
 			_plants_test()
+		"zombies":
+			_zombies_test()
+		"audio":
+			_audio_test()
 		_:
 			print("[test] unknown: ", which)
 			get_tree().quit()
@@ -183,6 +188,14 @@ func _flow_test() -> void:
 	var picked: int = chooser.picks.size()
 	chooser._confirm()
 	print("[flow] confirm -> mode=", mode, " belt=", match_ref.seeds, " cards=", hud._cards.size(), " picked=", picked)
+
+	# endless has a 12-seed default but only 9 slots — the belt must be capped
+	_choose_level("endless")
+	print("[flow] endless chooser=", chooser.root.visible, " slots=", chooser.slots,
+		" picks=", chooser.picks.size())
+	chooser._confirm()
+	print("[flow] endless belt=", match_ref.seeds.size(), " cards=", hud._cards.size(),
+		" endless=", match_ref.endless, " waves=", match_ref.level["waves"].size())
 	get_tree().quit()
 
 
@@ -320,6 +333,128 @@ func _plants_test() -> void:
 	get_tree().quit()
 
 
+## Behaviour check for the five newcomers: vault, screen door, balloon,
+## dancer summon, gargantuar smash.
+func _zombies_test() -> void:
+	var belt := ["sunflower", "peashooter", "wallnut", "melonpult", "kernelpult", "snowpea"]
+	_start_level("front-2", belt)
+	var m := match_ref
+	m.sun = 9000
+	m.cooldowns.clear()
+	m.spawn_queue = [{"t": 9999.0, "kind": "basic", "lane": 0, "wave": 0}]
+
+	# 1) pole vaulter clears one plant instead of eating it
+	m.cooldowns.clear()
+	m.sun = 9000
+	var vcell := Vector2i(4, 0)
+	m.plant_at(vcell, "wallnut")
+	var nut: PlantUnit = m.plants.get(vcell)
+	var vaulter := _test_zombie(m, "pole", 0)
+	vaulter.body_x = m.cell_center(vcell).x + 1.4
+	vaulter.global_position.x = vaulter.body_x
+	for i in range(150):
+		m.update(1.0 / 60.0)
+	print("[zombies] pole -> passed=", vaulter.body_x < nut.global_position.x,
+		" nut_hp=", int(nut.hp), "/", int(nut.max_hp), " vault_left=", vaulter.vault_left)
+
+	# 2) screen door eats peas, but a lobbed shot goes over it
+	m.cooldowns.clear()
+	m.sun = 9000
+	var door_z := _test_zombie(m, "screendoor", 1)
+	door_z.body_x = m.cell_center(Vector2i(6, 1)).x + 0.4
+	door_z.global_position.x = door_z.body_x
+	var hp_before := door_z.hp
+	m.fire_pea(Vector3(m.cell_center(Vector2i(1, 1)).x, 0.86, 0.0), 1, 25.0, false, 0.0)
+	for i in range(90):
+		m.update(1.0 / 60.0)
+	var armor_mid := door_z.armor
+	var hp_mid := door_z.hp
+	m.lob_at(Vector3(m.cell_center(Vector2i(1, 1)).x, 0.9, 0.0), 1, door_z.body_x, 80.0, "melonpult", false)
+	for i in range(120):
+		m.update(1.0 / 60.0)
+	print("[zombies] screendoor -> peas_hit_armor=", int(armor_mid) < int(door_z.max_armor),
+		" hp_untouched=", is_equal_approx(hp_mid, hp_before), " hp_after_lob=", int(door_z.hp))
+
+	# 3) balloon flies over the whole lane without eating
+	m.cooldowns.clear()
+	m.sun = 9000
+	var lane := 2
+	var guards: Array = []
+	for c in range(0, 7):
+		var cell2 := Vector2i(c, lane)
+		m.cooldowns.clear()
+		m.sun = 9000
+		m.plant_at(cell2, "wallnut")
+		guards.append(m.plants.get(cell2))
+	var balloon_z := _test_zombie(m, "balloon", lane)
+	balloon_z.body_x = m.cell_center(Vector2i(8, lane)).x
+	balloon_z.global_position.x = balloon_z.body_x
+	for i in range(240):
+		m.update(1.0 / 60.0)
+	var intact := 0
+	for g in guards:
+		if is_instance_valid(g) and not g.dead and g.hp >= g.max_hp - 0.5:
+			intact += 1
+	print("[zombies] balloon -> intact_nuts=", intact, "/", guards.size(),
+		" x=", snappedf(balloon_z.body_x, 0.1), " flying=", balloon_z.flying)
+
+	# 4) dancer drags four backups in with him
+	m.cooldowns.clear()
+	m.sun = 9000
+	var before := m.zombies.size()
+	_test_zombie(m, "dancer", 3)
+	var backups := 0
+	for zz in m.zombies:
+		if is_instance_valid(zz) and zz.kind == "backup":
+			backups += 1
+	print("[zombies] dancer -> spawned=", m.zombies.size() - before, " backups=", backups)
+
+	# 5) gargantuar flattens a wallnut in one swing
+	m.cooldowns.clear()
+	m.sun = 9000
+	var gcell := Vector2i(4, 4)
+	m.plant_at(gcell, "tallnut")
+	var big_nut: PlantUnit = m.plants.get(gcell)
+	var giant := _test_zombie(m, "gargantuar", 4)
+	giant.body_x = m.cell_center(gcell).x + 1.0
+	giant.global_position.x = giant.body_x
+	for i in range(120):
+		m.update(1.0 / 60.0)
+	print("[zombies] gargantuar -> plant_gone=", not m.plants.has(gcell),
+		" nut_dead=", (not is_instance_valid(big_nut)) or big_nut.dead,
+		" hp=", int(giant.hp), "/", int(giant.max_hp))
+	get_tree().quit()
+
+
+## Music must load, loop, and switch without restarting the stream.
+func _audio_test() -> void:
+	var st = App._music.stream
+	var mp3 := st as AudioStreamMP3
+	print("[audio] loaded=", st != null, " mp3=", mp3 != null,
+		" loop=", mp3.loop if mp3 != null else false,
+		" length=", snappedf(st.get_length(), 0.1) if st != null else -1.0)
+	App.play_music("day")
+	await get_tree().create_timer(0.35).timeout
+	var pk1 := App._music.pitch_scale
+	var db1 := App._music.volume_db
+	var pos1 := App._music.get_playback_position()
+	App.play_music("day")
+	await get_tree().create_timer(0.25).timeout
+	print("[audio] same-track repeat -> restarted=", App._music.get_playback_position() < pos1)
+	App.play_music("night")
+	await get_tree().create_timer(0.35).timeout
+	print("[audio] switch day->night pitch ", snappedf(pk1, 0.01), " -> ", snappedf(App._music.pitch_scale, 0.01),
+		" db ", snappedf(db1, 0.1), " -> ", snappedf(App._music.volume_db, 0.1))
+	App.settings["music"] = 0.0
+	App.refresh_music_volume()
+	await get_tree().create_timer(0.1).timeout
+	print("[audio] muted db=", snappedf(App._music.volume_db, 0.1))
+	App.settings["music"] = 0.55
+	App.refresh_music_volume()
+	print("[audio] restored db=", snappedf(App._music.volume_db, 0.1), " playing=", App._music.playing)
+	get_tree().quit()
+
+
 func _choice_test() -> void:
 	menu.show_menu(true)
 	chooser.open("front-1")
@@ -380,6 +515,26 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 		_open_menu()
 		await get_tree().process_frame
 		chooser.open(lvl if lvl != "" else "front-2")
+	elif shot == "zombies":
+		_start_level(lvl if lvl != "" else "front-2")
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		var kinds := ["pole", "screendoor", "balloon", "dancer", "gargantuar"]
+		for i in range(kinds.size()):
+			match_ref.spawn_zombie(str(kinds[i]), i)
+			var z: ZombieUnit = match_ref.zombies[match_ref.zombies.size() - 1]
+			z.body_x = 2.6 + (i % 2) * 0.9
+			z.global_position.x = z.body_x
+			z.stun = 999.0
+		match_ref.spawn_queue = []
+		if cam != "" and player != null:
+			var b := cam.split(",")
+			if b.size() >= 5:
+				var eye := Vector3(float(b[0]), float(b[1]), float(b[2]))
+				player.spawn(eye - Vector3(0, PlayerController.EYE, 0), deg_to_rad(float(b[3])))
+				player.pitch = deg_to_rad(float(b[4]))
+				player.camera.rotation.x = player.pitch
+		if player:
+			player.active = false
 	elif shot == "pause":
 		_start_level(lvl if lvl != "" else "front-2")
 		await get_tree().create_timer(0.5).timeout
@@ -387,7 +542,11 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 	elif shot == "end":
 		_start_level(lvl if lvl != "" else "front-1")
 		await get_tree().create_timer(0.4).timeout
-		hud.show_end(true, {"stars": 3, "time": 148.0, "kills": 18, "plants": 14, "mowers": 5, "sun": 975, "has_next": true})
+		if lvl == "endless":
+			hud.show_end(false, {"endless": true, "wave": 17, "best": 17, "new_record": true,
+				"time": 642.0, "kills": 121, "plants": 46, "sun": 3125, "has_next": false})
+		else:
+			hud.show_end(true, {"stars": 3, "time": 148.0, "kills": 18, "plants": 14, "mowers": 5, "sun": 975, "has_next": true})
 		mode = "end"
 	else:
 		var id := lvl if lvl != "" else "front-1"
@@ -404,6 +563,11 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 			var steps := int(warp * 60.0)
 			for i in range(steps):
 				match_ref.update(1.0 / 60.0)
+			# a sun orb that drifted into the lens ruins the shot
+			for orb in match_ref.suns:
+				if is_instance_valid(orb):
+					orb.queue_free()
+			match_ref.suns.clear()
 		if cam != "" and player != null:
 			var b := cam.split(",")
 			if b.size() >= 5:
@@ -496,6 +660,7 @@ func _open_menu() -> void:
 	_decorate_menu_garden()
 	_build_menu_camera()
 	menu.show_menu(true)
+	App.play_music("menu")
 
 
 func _decorate_menu_garden() -> void:
@@ -541,7 +706,9 @@ func _start_level(id: String, picks: Array = []) -> void:
 	hud.visible = true
 	hud.hide_end()
 	_teardown()
-	_build_world(str(level["sky"]))
+	var sky := str(level["sky"])
+	_build_world(sky)
+	App.play_music("endless" if bool(level.get("endless", false)) else ("night" if sky == "night" else "day"))
 
 	player = PlayerController.new()
 	player.name = "Player"
@@ -703,6 +870,9 @@ func _restart() -> void:
 
 
 func _next_level() -> void:
+	if current_id == "endless":
+		_open_menu()
+		return
 	for i in range(Data.LEVELS.size()):
 		if str(Data.LEVELS[i]["id"]) == current_id:
 			if i + 1 < Data.LEVELS.size():
@@ -721,6 +891,22 @@ func _on_state(s: String) -> void:
 	get_tree().paused = false
 	var won := s == "won"
 	var m := match_ref
+	if m.endless:
+		# endless cannot be won — always report it as a survival record
+		var record := App.record_endless(m.endless_wave)
+		hud.set_prompt("")
+		hud.show_end(false, {
+			"endless": true,
+			"wave": m.endless_wave,
+			"best": App.endless_best(),
+			"new_record": record,
+			"time": m.time,
+			"kills": m.stat_kills,
+			"plants": m.stat_plants,
+			"sun": m.stat_sun,
+			"has_next": false,
+		})
+		return
 	var stars := 0
 	if won:
 		stars = 1

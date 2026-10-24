@@ -28,10 +28,13 @@ var save := {
 	"best": {},
 	"unlocked": 0,
 	"picks": {},
+	"endless_best": 0,
+	"endless_runs": 0,
 }
 var settings := {
 	"sensitivity": 0.0022,
 	"volume": 0.7,
+	"music": 0.7,
 	"invert_y": false,
 	"shake": true,
 }
@@ -42,6 +45,19 @@ var _p3d: Array[AudioStreamPlayer3D] = []
 var _i2d := 0
 var _i3d := 0
 var _wind: AudioStreamPlayer
+var _music: AudioStreamPlayer
+var _music_tween: Tween
+var _music_track := ""
+
+## One track, three readings: the menu plays it straight, the daytime battle
+## sits a little under the mix, and the night levels drop the pitch so the same
+## melody reads as uneasy instead of cheerful.
+const MUSIC_TRACKS := {
+	"menu": {"pitch": 1.0, "db": -6.0},
+	"day": {"pitch": 1.0, "db": -9.0},
+	"night": {"pitch": 0.91, "db": -10.0},
+	"endless": {"pitch": 1.05, "db": -8.0},
+}
 
 const SFX_NAMES := [
 	"click", "select", "deny", "plant", "dig", "shoot", "hit", "chomp",
@@ -222,6 +238,63 @@ func _setup_audio() -> void:
 	add_child(_wind)
 	_wind.play()
 
+	_music = AudioStreamPlayer.new()
+	_music.name = "Music"
+	_music.bus = "Master"
+	var track := load("res://audio/music/theme.mp3")
+	if track is AudioStreamMP3:
+		(track as AudioStreamMP3).loop = true
+		(track as AudioStreamMP3).loop_offset = 0.0
+	_music.stream = track
+	_music.volume_db = -46.0
+	add_child(_music)
+
+
+## Cross-fades to `track` (menu / day / night / endless). Calling it with the
+## track that is already playing is a no-op, so state changes are cheap.
+func play_music(track: String) -> void:
+	if _music == null or _music.stream == null:
+		return
+	if track == _music_track and _music.playing:
+		return
+	_music_track = track
+	var cfg: Dictionary = MUSIC_TRACKS.get(track, MUSIC_TRACKS["day"])
+	_music.pitch_scale = float(cfg["pitch"])
+	var target := float(cfg["db"]) + music_gain_db()
+	if not _music.playing:
+		_music.volume_db = -46.0
+		_music.play()
+	if _music_tween and _music_tween.is_running():
+		_music_tween.kill()
+	_music_tween = create_tween()
+	_music_tween.tween_property(_music, "volume_db", target, 1.2).set_trans(Tween.TRANS_SINE)
+
+
+func stop_music(fade := 0.8) -> void:
+	_music_track = ""
+	if _music == null or not _music.playing:
+		return
+	if _music_tween and _music_tween.is_running():
+		_music_tween.kill()
+	_music_tween = create_tween()
+	_music_tween.tween_property(_music, "volume_db", -46.0, fade).set_trans(Tween.TRANS_SINE)
+	_music_tween.tween_callback(func() -> void:
+		if _music != null:
+			_music.stop()
+	)
+
+
+## Re-applies the music slider without restarting the track.
+func refresh_music_volume() -> void:
+	if _music == null or not _music.playing:
+		return
+	var cfg: Dictionary = MUSIC_TRACKS.get(_music_track, MUSIC_TRACKS["day"])
+	_music.volume_db = float(cfg["db"]) + music_gain_db()
+
+
+func music_gain_db() -> float:
+	return linear_to_db(clamp(float(settings.get("music", 0.7)), 0.001, 1.0))
+
 
 func _exit_tree() -> void:
 	# the ambience keeps a stream alive past shutdown otherwise, which shows up
@@ -229,7 +302,11 @@ func _exit_tree() -> void:
 	if _wind != null:
 		_wind.stop()
 		_wind.stream = null
-	_wind = null
+		_wind = null
+	if _music != null:
+		_music.stop()
+		_music.stream = null
+		_music = null
 	_sfx.clear()
 
 
@@ -298,6 +375,21 @@ func record_level(id: String, stars: int, seconds: float) -> void:
 	if best <= 0.0 or seconds < best:
 		save["best"][id] = seconds
 	persist()
+
+
+func endless_best() -> int:
+	return int(save.get("endless_best", 0))
+
+
+## Returns true when this run beat the stored record.
+func record_endless(waves: int) -> bool:
+	save["endless_runs"] = int(save.get("endless_runs", 0)) + 1
+	var best := endless_best()
+	var beat := waves > best
+	if beat:
+		save["endless_best"] = waves
+	persist()
+	return beat
 
 
 func picks_for(id: String) -> Array:
