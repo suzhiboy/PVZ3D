@@ -1,0 +1,52 @@
+{
+   "action": {
+      "default_icon": {
+         "128": "img/icon-128.png",
+         "16": "img/icon-16.png",
+         "48": "img/icon-48.png"
+      },
+      "default_popup": "popup.html",
+      "default_title": "__MSG_manifest_browser_action__"
+   },
+   "background": {
+      "service_worker": "service-worker.js"
+   },
+   "content_scripts": [ {
+      "all_frames": false,
+      "js": [ "js/router.js" ],
+      "matches": [ "*://fetchv.net/router.html*" ],
+      "run_at": "document_end"
+   }, {
+      "all_frames": false,
+      "js": [ "js/content.js" ],
+      "matches": [ "*://fetchv.net/m3u8downloader*", "*://fetchv.net/*/m3u8downloader*", "*://fetchv.net/videodownloader*", "*://fetchv.net/*/videodownloader*", "*://fetchv.net/bufferrecorder*", "*://fetchv.net/*/bufferrecorder*" ],
+      "run_at": "document_end"
+   }, {
+      "all_frames": true,
+      "exclude_matches": [ "*://fetchv.net/*", "https://*.doubleclick.net/*", "https://www.google.com/recaptcha/*" ],
+      "js": [ "js/injection.js" ],
+      "matches": [ "\u003Call_urls>" ],
+      "run_at": "document_start"
+   } ],
+   "default_locale": "en",
+   "description": "__MSG_manifest_description__",
+   "homepage_url": "https://fetchv.net/",
+   "host_permissions": [ "https://*/*", "http://*/*" ],
+   "icons": {
+      "128": "img/icon-128.png",
+      "16": "img/icon-16.png",
+      "48": "img/icon-48.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAjVzax7JFEnOr7PPO408Jn9AjF15E+XSqy1PkZhvGFkDIaKFOkfYsCgTY6BtsF/NgeCz9QBverTQYhQb+ZqBJrJgRTz3dVuWRhRagLLD7OFxrGUDW8wc6ME91DM5/xmoAJ3bll4jF1wrQdoLYCVEyFYpB15i0fOmG8TgiRSqj4cPhBy+VlwDhzNKGl/NPnqCykbKDhZIJy4AKH07tdDrsS56Q7SWU5Yo/WYGPVKnzfd/D7W7gn5cNiOBhb1TC7udUti7ar/6g5dQIQfRT8lg4AcOJHfEqdakBDZmXjyDl6KPCwK40FOPDJo273ZmO6JKqNsW1qPjjorW2adPTLRgHaQIDAQAB",
+   "manifest_version": 3,
+   "minimum_chrome_version": "92",
+   "name": "__MSG_manifest_name__",
+   "permissions": [ "tabs", "webRequest", "storage", "declarativeNetRequest", "offscreen", "scripting" ],
+   "short_name": "FetchV",
+   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
+   "version": "3.2",
+   "web_accessible_resources": [ {
+      "matches": [ "\u003Call_urls>" ],
+      "resources": [ "js/hook.js", "js/mediabunny.js", "img/recording.svg" ]
+   } ]
+}

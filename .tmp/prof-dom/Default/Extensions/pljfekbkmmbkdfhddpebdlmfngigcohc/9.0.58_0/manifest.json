@@ -1,0 +1,93 @@
+{
+   "action": {
+      "default_icon": "assets/logo/logo_x48.png",
+      "default_popup": "popup/popup.html"
+   },
+   "background": {
+      "service_worker": "./background.js"
+   },
+   "content_scripts": [ {
+      "css": [ "content/content.css" ],
+      "js": [ "content/content.js" ],
+      "matches": [ "\u003Call_urls>" ],
+      "run_at": "document_start"
+   }, {
+      "js": [ "assets/videoScripts/taobao.js" ],
+      "matches": [ "*://item.taobao.com/*" ]
+   }, {
+      "js": [ "assets/videoScripts/bilibili.js" ],
+      "matches": [ "*://www.bilibili.com/video/*", "*://*.bilibili.com/bangumi/play/ep*" ],
+      "run_at": "document_end"
+   }, {
+      "js": [ "assets/videoScripts/jQuery-3.2.1.min.js", "assets/videoScripts/facebook.js" ],
+      "matches": [ "*://www.facebook.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "js": [ "assets/videoScripts/jQuery-3.2.1.min.js", "assets/videoScripts/tw.js" ],
+      "matches": [ "*://x.com/*" ],
+      "run_at": "document_start"
+   }, {
+      "js": [ "assets/videoScripts/metacafe.js" ],
+      "matches": [ "*://www.metacafe.com/watch/*" ],
+      "run_at": "document_end"
+   }, {
+      "js": [ "assets/videoScripts/jQuery-3.2.1.min.js", "assets/videoScripts/instagram.js" ],
+      "matches": [ "*://www.instagram.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "js": [ "assets/videoScripts/jQuery-3.2.1.min.js", "assets/videoScripts/vimeo.js" ],
+      "matches": [ "*://vimeo.com/*" ],
+      "run_at": "document_end"
+   }, {
+      "js": [ "assets/videoScripts/jQuery-3.2.1.min.js", "assets/videoScripts/acfun.js" ],
+      "matches": [ "https://*.acfun.cn/*" ]
+   }, {
+      "js": [ "assets/videoScripts/youtube.js" ],
+      "matches": [ "https://www.youtube.com/watch*" ]
+   }, {
+      "js": [ "assets/videoScripts/baidubaike.js" ],
+      "matches": [ "https://baike.baidu.com/item/*" ]
+   }, {
+      "js": [ "assets/videoScripts/tiktok.js" ],
+      "matches": [ "https://tiktok.com/*", "https://www.tiktok.com/*" ]
+   }, {
+      "js": [ "GihzWj3RFy.js" ],
+      "matches": [ "https://instagram.com/*", "https://x.com/", "https://*/*", "https://www.xiaohongshu.com/*", "https://www.tiktok.com/*", "https://www.snapchat.com/*", "https://web.snapchat.com/*", "https://www.kuaishou.com/*", "https://ads.tiktok.com/*", "https://creatormarketplace.tiktok.com/*", "https://www.facebook.com/*", "https://www.bilibili.com/*", "https://space.bilibili.com/*", "https://search.bilibili.com/*" ],
+      "run_at": "document_start"
+   } ],
+   "declarative_net_request": {
+      "rule_resources": [ {
+         "enabled": true,
+         "id": "ruleset_1",
+         "path": "rules.json"
+      } ]
+   },
+   "default_locale": "en",
+   "description": "__MSG_description__",
+   "host_permissions": [ "*://*/*" ],
+   "icons": {
+      "128": "assets/logo/logo_x128.png",
+      "16": "assets/logo/logo_x16.png",
+      "48": "assets/logo/logo_x48.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu5uVL/morlp6PO0sCRK/EC38/OXxGL/+/m5kgzziZ0EkvAn1yezdcnMxw/Mrre8H2wmFpF3wc9m2a2RRiZJfBpl8t9UISaLxFEUSPtUHDLhPx9R/SVC82cHrMjAUp+W3ejKUoA3/YvnZzWMOC/BW1eX9bTik+cQIrglBI9LnMkmBau7Zv4l+zMRHNPJCcZZF3RDBzYwHOqVoNH2B1UjEFExGqoBzEwnnt+5CKcx9vUG6/17/iAGddcw4ziQJ8nxLKEkf6b6vTWCjLmc2WxspM2TJJI2+ZIqzll0/mKp6hFK4ZxafFm01eeC2k2TGewVlyF/Uj2JZXxWVh7aWMXE9fwIDAQAB",
+   "manifest_version": 3,
+   "name": "__MSG_default_title__",
+   "options_page": "options/options.html",
+   "permissions": [ "downloads", "downloads.shelf", "downloads.open", "contextMenus", "tabs", "scripting", "storage", "unlimitedStorage", "notifications", "declarativeNetRequest", "webRequest", "offscreen" ],
+   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
+   "version": "9.0.58",
+   "web_accessible_resources": [ {
+      "matches": [ "*://*/*" ],
+      "resources": [ "content/windowDataMessage.js" ]
+   }, {
+      "matches": [ "*://*/*" ],
+      "resources": [ "assets/*.png" ]
+   }, {
+      "matches": [ "https://www.tiktok.com/*", "https://ads.tiktok.com/*", "https://www.instagram.com/*", "https://x.com/*", "https://www.xiaohongshu.com/*", "https://www.douyin.com/*", "https://creatormarketplace.tiktok.com/*", "https://www.datatool.vip/*", "https://www.youtube.com/*", "https://www.facebook.com/*", "https://www.bilibili.com/*", "https://space.bilibili.com/*", "https://search.bilibili.com/*" ],
+      "resources": [ "rhYeNPVs5Y.js" ]
+   }, {
+      "matches": [ "*://*/*" ],
+      "resources": [ "FYzftcm4zq.css", "XBTFypfheO.css", "IoFxFWEWHm.css" ]
+   } ]
+}

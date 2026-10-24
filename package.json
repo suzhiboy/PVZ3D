@@ -1,0 +1,25 @@
+{
+  "name": "pvz3d",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "First-person 3D Plants vs. Zombies remake (procedural art, no original assets)",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "build": "tsc --noEmit && vite build --base ./",
+    "build:file": "tsc --noEmit && vite build --base ./ && node tools/standalone.mjs",
+    "preview": "vite preview --port 4173 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"tests/*.test.ts\"",
+    "shots": "node tools/shots.mjs"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "0.186.0",
+    "typescript": "~5.9.3",
+    "vite": "8.3.5"
+  }
+}
+
