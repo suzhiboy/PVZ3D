@@ -161,7 +161,7 @@ D:\download_web\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64.exe --pa
   都是运行时拼的低多边形。
 - **种子卡图标是实时的 3D 渲染**：每张卡里一个 `SubViewport`，种下去之前就能看见那株植物
   在慢慢转。
-- **音效是合成的**：`tools/gen_audio.py` 用 Python 标准库写了 25 个 wav（种植、射击、
+- **音效是合成的**：`tools/gen_audio.py` 用 Python 标准库写了 26 个 wav（种植、射击、
   啃咬、爆炸、僵尸呻吟、脚步、开关门、烟囱、胜负音效、风声），没有版权素材；
   背景音乐是外部 mp3。
 - **可无渲染跑关**：`--sim=秒数` 直接把模拟快进完并打印结果，用来验证“这关能不能通”。
