@@ -18,6 +18,7 @@ var _menu_t := 0.0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_build_scene_grade()
 
 	hud = Hud.new()
 	hud.name = "Hud"
@@ -55,6 +56,7 @@ func _ready() -> void:
 	var walk := ""
 	var loadout := ""
 	var test := ""
+	var hide_ui := false
 	for a in args:
 		var arg: String = a.trim_prefix("--")
 		if arg.begins_with("shot="):
@@ -75,6 +77,8 @@ func _ready() -> void:
 			sel = arg.trim_prefix("sel=")
 		elif arg.begins_with("walk="):
 			walk = arg.trim_prefix("walk=")
+		elif arg == "hud=off":
+			hide_ui = true
 		elif arg.begins_with("loadout="):
 			loadout = arg.trim_prefix("loadout=")
 		elif arg.begins_with("test="):
@@ -91,7 +95,7 @@ func _ready() -> void:
 		_sim(str(lvl if lvl != "" else "front-1"), sim, pre)
 		return
 	if shot != "":
-		_shot(shot, lvl, out, warp, cam, pre, sel, loadout)
+		_shot(shot, lvl, out, warp, cam, pre, sel, loadout, hide_ui)
 	else:
 		_open_menu()
 
@@ -102,6 +106,22 @@ func open_all_doors() -> void:
 	for d in world.doors:
 		if is_instance_valid(d):
 			d.set_open(true, false)
+
+
+## A whisper of split-toning, edge falloff and paper grain. It sits below the
+## HUD and menu layers, so only the 3D miniature is graded.
+func _build_scene_grade() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "SceneGrade"
+	layer.layer = 2
+	add_child(layer)
+	var wash := ColorRect.new()
+	wash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/grade.gdshader")
+	wash.material = mat
+	layer.add_child(wash)
 
 
 func _walk_test(mode: String) -> void:
@@ -159,6 +179,10 @@ func _run_test(which: String) -> void:
 			_plants_test()
 		"zombies":
 			_zombies_test()
+		"coins":
+			_coins_test()
+		"water":
+			_water_test()
 		"audio":
 			_audio_test()
 		_:
@@ -426,6 +450,37 @@ func _zombies_test() -> void:
 	get_tree().quit()
 
 
+## Pool feedback regression: enter, wade and jump in water all emit effects,
+## and the controller remains inside the pool collision instead of falling through.
+func _water_test() -> void:
+	_start_level("back-1")
+	match_ref.spawn_queue = []
+	var splashes := [0]
+	var moving_splashes := [0]
+	player.water_feedback.connect(func(_p: Vector3, _s: float, moving: bool) -> void:
+		splashes[0] += 1
+		if moving:
+			moving_splashes[0] += 1
+	)
+	var z := Data.row_z(Data.BACK, 2)
+	player.spawn(Vector3(-29.0, 0.15, z), PI * 0.5)
+	for i in range(24):
+		await get_tree().physics_frame
+	Input.action_press("move_forward")
+	for i in range(75):
+		await get_tree().physics_frame
+	Input.action_release("move_forward")
+	Input.action_press("jump")
+	await get_tree().physics_frame
+	Input.action_release("jump")
+	for i in range(20):
+		await get_tree().physics_frame
+	print("[water] in_water=", player.in_water, " y=", snappedf(player.global_position.y, 0.01),
+		" splashes=", splashes[0], " while_moving=", moving_splashes[0],
+		" on_floor=", player.is_on_floor(), " fx_nodes=", world.water_fx.get_child_count())
+	get_tree().quit()
+
+
 ## Music must load, loop, and switch without restarting the stream.
 func _audio_test() -> void:
 	var st = App._music.stream
@@ -452,6 +507,66 @@ func _audio_test() -> void:
 	App.settings["music"] = 0.55
 	App.refresh_music_volume()
 	print("[audio] restored db=", snappedf(App._music.volume_db, 0.1), " playing=", App._music.playing)
+	get_tree().quit()
+
+
+## Economy check: the drop table pays out in range, coins magnet to the
+## player, and the wallet banks across matches.
+func _coins_test() -> void:
+	_start_level("front-2")
+	var m := match_ref
+	m.sun = 9000
+	m.cooldowns.clear()
+	m.spawn_queue = [{"t": 9999.0, "kind": "basic", "lane": 0, "wave": 0}]
+	for c in m.coins:
+		c.queue_free()
+	m.coins.clear()
+
+	# 1) a gargantuar always pays 5
+	var g := _test_zombie(m, "gargantuar", 0)
+	g.damage(99999.0)
+	for i in range(8):
+		m.update(1.0 / 60.0)
+	print("[coins] gargantuar guaranteed -> dropped=", m.coins.size(), " (expect 5)")
+	for c in m.coins:
+		c.queue_free()
+	m.coins.clear()
+
+	# 2) drop rate: 120 basics at 32% -> expect 26..52 (95%+ window)
+	for i in range(120):
+		var z := _test_zombie(m, "basic", i % 5)
+		z.damage(99999.0)
+	for i in range(30):
+		m.update(1.0 / 60.0)
+	var dropped: int = m.coins.size()
+	var in_range: bool = dropped >= 26 and dropped <= 52
+	print("[coins] 120 basics -> dropped=", dropped, " in_range=", in_range)
+
+	# 3) magnet: stand a coin next to the player, it should fly in
+	if m.coins.is_empty():
+		print("[coins] no coins on field, magnet test skipped")
+	else:
+		var c0: CoinOrb = m.coins[0]
+		player.global_position = Vector3(c0.global_position.x + 1.4, 0.02, c0.global_position.z)
+		var before: int = m.stat_coins
+		for i in range(240):
+			m.update(1.0 / 60.0)
+			if m.stat_coins > before:
+				break
+		print("[coins] magnet -> collected=", m.stat_coins - before, " hud_shown=", hud._coin.shown)
+
+	# 4) wallet banks and reads back (then restore, so the test leaves no trace)
+	var wallet0 := App.wallet()
+	App.add_coins(m.stat_coins)
+	var after_bank := App.wallet()
+	print("[coins] bank ", wallet0, " + ", m.stat_coins, " -> ", after_bank,
+		" ok=", after_bank == wallet0 + m.stat_coins)
+	App.save["coins"] = wallet0
+	App.persist()
+	print("[coins] restored=", App.wallet())
+
+	# 5) HUD badge exists and reads the live total
+	print("[coins] badge=", hud._coin != null, " shown=", hud._coin.shown)
 	get_tree().quit()
 
 
@@ -506,7 +621,7 @@ func _sim(id: String, seconds: float, pre: String) -> void:
 
 
 func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre: String, sel: String,
-		loadout := "") -> void:
+		loadout := "", hide_ui := false) -> void:
 	await get_tree().process_frame
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if shot == "menu":
@@ -515,6 +630,47 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 		_open_menu()
 		await get_tree().process_frame
 		chooser.open(lvl if lvl != "" else "front-2")
+	elif shot == "zombie":
+		_start_level(lvl if lvl != "" else "front-2")
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		match_ref.spawn_zombie(loadout if loadout != "" else "basic", 2)
+		var z: ZombieUnit = match_ref.zombies[0]
+		z.body_x = 2.6
+		z.global_position.x = z.body_x
+		z.stun = 999.0
+		z.set_physics_process(false)
+		match_ref.spawn_queue = []
+		if cam != "" and player != null:
+			var b := cam.split(",")
+			if b.size() >= 5:
+				var eye := Vector3(float(b[0]), float(b[1]), float(b[2]))
+				player.spawn(eye - Vector3(0, PlayerController.EYE, 0), deg_to_rad(float(b[3])))
+				player.pitch = deg_to_rad(float(b[4]))
+				player.camera.rotation.x = player.pitch
+		if player:
+			player.active = false
+	elif shot == "coins":
+		_start_level(lvl if lvl != "" else "front-1")
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		for i in range(7):
+			match_ref.spawn_coin(Vector3(-3.4 + i * 0.85, 0.4, -1.2 + (i % 3) * 0.75), 1)
+		# 三枚落在脚边，等磁吸收走，HUD 徽章就能拍到数字
+		if cam != "":
+			var cb := cam.split(",")
+			if cb.size() >= 3:
+				var at := Vector3(float(cb[0]), 0.4, float(cb[2]))
+				for k in range(3):
+					match_ref.spawn_coin(at + Vector3(0.3 + k * 0.45, 0.0, 0.5 - k * 0.35), 1)
+		match_ref.spawn_queue = []
+		if cam != "" and player != null:
+			var b := cam.split(",")
+			if b.size() >= 5:
+				var eye := Vector3(float(b[0]), float(b[1]), float(b[2]))
+				player.spawn(eye - Vector3(0, PlayerController.EYE, 0), deg_to_rad(float(b[3])))
+				player.pitch = deg_to_rad(float(b[4]))
+				player.camera.rotation.x = player.pitch
+		if player:
+			player.active = false
 	elif shot == "zombies":
 		_start_level(lvl if lvl != "" else "front-2")
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -535,6 +691,19 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 				player.camera.rotation.x = player.pitch
 		if player:
 			player.active = false
+	elif shot == "water":
+		_start_level(lvl if lvl != "" else "back-1")
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		await get_tree().physics_frame
+		if cam != "" and player != null:
+			var wb := cam.split(",")
+			if wb.size() >= 5:
+				var eye := Vector3(float(wb[0]), float(wb[1]), float(wb[2]))
+				player.spawn(eye - Vector3(0, PlayerController.EYE, 0), deg_to_rad(float(wb[3])))
+				player.pitch = deg_to_rad(float(wb[4]))
+				player.camera.rotation.x = player.pitch
+		if player:
+			player.active = false
 	elif shot == "pause":
 		_start_level(lvl if lvl != "" else "front-2")
 		await get_tree().create_timer(0.5).timeout
@@ -544,9 +713,10 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 		await get_tree().create_timer(0.4).timeout
 		if lvl == "endless":
 			hud.show_end(false, {"endless": true, "wave": 17, "best": 17, "new_record": true,
-				"time": 642.0, "kills": 121, "plants": 46, "sun": 3125, "has_next": false})
+				"time": 642.0, "kills": 121, "plants": 46, "sun": 3125, "coins": 486, "has_next": false})
 		else:
-			hud.show_end(true, {"stars": 3, "time": 148.0, "kills": 18, "plants": 14, "mowers": 5, "sun": 975, "has_next": true})
+			hud.show_end(true, {"stars": 3, "time": 148.0, "kills": 18, "plants": 14, "mowers": 5,
+				"sun": 975, "coins": 342, "has_next": true})
 		mode = "end"
 	else:
 		var id := lvl if lvl != "" else "front-1"
@@ -581,8 +751,20 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 			player.active = false
 		if match_ref:
 			print("[sim] ", match_ref.snapshot(), " kills=", match_ref.stat_kills, " mowers=", match_ref.mowers_used)
-	for i in range(40):
+	if hide_ui:
+		if hud != null:
+			hud.visible = false
+		if player != null:
+			var hand := player.get("_view") as Node3D
+			if hand != null:
+				hand.visible = false
+	var settle_frames := 6 if shot == "water" else 40
+	for i in range(settle_frames):
 		await get_tree().process_frame
+	if shot == "water" and world != null and world.water_fx != null:
+		world.water_fx.splash(Vector3(-26.2, 0.0, Data.row_z(Data.BACK, 2) + 0.55), 1.45, false)
+		for i in range(6):
+			await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	print("[shot] image ", img.get_width(), "x", img.get_height())
@@ -716,6 +898,7 @@ func _start_level(id: String, picks: Array = []) -> void:
 	var spawn := _spawn_for(str(level["yard"]))
 	player.spawn(spawn[0], spawn[1])
 	player.footstep.connect(_on_footstep)
+	player.water_feedback.connect(_on_water_feedback)
 	_apply_settings()
 
 	match_ref = Match.new()
@@ -848,6 +1031,17 @@ func _on_footstep(surface: String) -> void:
 	App.sfx(name, -16.0, randf_range(0.9, 1.12))
 
 
+func _on_water_feedback(pos: Vector3, strength: float, moving: bool) -> void:
+	if world == null or not is_instance_valid(world):
+		return
+	if world.water_fx != null:
+		world.water_fx.splash(pos, strength, moving)
+	if not moving:
+		App.sfx("step_water", -11.0, randf_range(0.72, 0.84))
+		if player != null:
+			player.add_shake(0.14 * strength)
+
+
 func _pause() -> void:
 	mode = "paused"
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -891,6 +1085,9 @@ func _on_state(s: String) -> void:
 	get_tree().paused = false
 	var won := s == "won"
 	var m := match_ref
+	var earned := m.stat_coins
+	if earned > 0:
+		App.add_coins(earned)
 	if m.endless:
 		# endless cannot be won — always report it as a survival record
 		var record := App.record_endless(m.endless_wave)
@@ -904,6 +1101,7 @@ func _on_state(s: String) -> void:
 			"kills": m.stat_kills,
 			"plants": m.stat_plants,
 			"sun": m.stat_sun,
+			"coins": earned,
 			"has_next": false,
 		})
 		return
@@ -928,5 +1126,6 @@ func _on_state(s: String) -> void:
 		"plants": m.stat_plants,
 		"mowers": m.mowers.filter(func(x): return is_instance_valid(x) and not x.spent).size(),
 		"sun": m.stat_sun,
+		"coins": earned,
 		"has_next": won and idx + 1 < Data.LEVELS.size(),
 	})

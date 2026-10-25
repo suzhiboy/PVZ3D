@@ -49,15 +49,15 @@ class SeedTile extends Control:
 	var _bg_hover: StyleBoxFlat
 	var _bg_pick: StyleBoxFlat
 	var _bg_off: StyleBoxFlat
-	var _accent := Color("#8fd06a")
+	var _accent := Color("#84ad66")
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_STOP
-		_bg = _box_style(Color(0.07, 0.11, 0.08, 0.94), Color(0.72, 0.82, 0.55, 0.16))
-		_bg_hover = _box_style(Color(0.17, 0.26, 0.17, 0.98), Color(0.98, 0.84, 0.45, 0.9))
-		_bg_pick = _box_style(Color(0.14, 0.2, 0.12, 0.97), Color(0.98, 0.84, 0.45, 0.8))
+		_bg = _box_style(Color(0.066, 0.112, 0.085, 0.95), Color(0.72, 0.62, 0.4, 0.28))
+		_bg_hover = _box_style(Color(0.16, 0.245, 0.17, 0.98), Color(0.96, 0.81, 0.47, 0.84))
+		_bg_pick = _box_style(Color(0.13, 0.205, 0.125, 0.98), Color(0.94, 0.79, 0.45, 0.78))
 		_bg_pick.set_border_width_all(2)
-		_bg_off = _box_style(Color(0.05, 0.07, 0.06, 0.9), Color(0.5, 0.55, 0.45, 0.1))
+		_bg_off = _box_style(Color(0.047, 0.071, 0.058, 0.9), Color(0.5, 0.55, 0.45, 0.1))
 		_accent = _accent_for(cost)
 		icon = PlantIcon.new()
 		icon.kind = kind
@@ -77,17 +77,20 @@ class SeedTile extends Control:
 	func _box_style(bg: Color, border: Color) -> StyleBoxFlat:
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = bg
-		sb.set_corner_radius_all(12)
+		sb.set_corner_radius_all(14)
 		sb.set_border_width_all(1)
 		sb.border_color = border
+		sb.shadow_color = Color(0.012, 0.02, 0.014, 0.36)
+		sb.shadow_size = 6
+		sb.shadow_offset = Vector2(0, 2)
 		return sb
 
 	func _accent_for(c: int) -> Color:
 		if c >= 175:
-			return Color("#c88ce0")
+			return Color("#b38bd1")
 		if c >= 100:
-			return Color("#f2c14e")
-		return Color("#8fd06a")
+			return Color("#d2ac5c")
+		return Color("#84ad66")
 
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton:
@@ -138,13 +141,13 @@ class SlotBox extends Control:
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		_bg = StyleBoxFlat.new()
-		_bg.bg_color = Color(0.04, 0.07, 0.05, 0.8)
-		_bg.set_corner_radius_all(10)
+		_bg.bg_color = Color(0.038, 0.066, 0.05, 0.84)
+		_bg.set_corner_radius_all(12)
 		_bg.set_border_width_all(1)
-		_bg.border_color = Color(0.65, 0.75, 0.5, 0.2)
+		_bg.border_color = Color(0.66, 0.6, 0.4, 0.24)
 		_bg_hover = _bg.duplicate()
-		_bg_hover.bg_color = Color(0.1, 0.16, 0.1, 0.9)
-		_bg_hover.border_color = Color(0.95, 0.8, 0.4, 0.55)
+		_bg_hover.bg_color = Color(0.09, 0.15, 0.1, 0.92)
+		_bg_hover.border_color = Color(0.93, 0.79, 0.45, 0.58)
 		pic = TextureRect.new()
 		pic.position = Vector2(2, 2)
 		pic.size = Vector2(size.x - 4, 80)
@@ -207,12 +210,13 @@ func _ready() -> void:
 	sheet.position = Vector2(60, 26)
 	sheet.size = SHEET
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.09, 0.07, 0.97)
-	sb.set_corner_radius_all(22)
-	sb.set_border_width_all(2)
-	sb.border_color = Color(0.72, 0.85, 0.55, 0.26)
-	sb.shadow_color = Color(0, 0, 0, 0.45)
-	sb.shadow_size = 18
+	sb.bg_color = Color(0.043, 0.078, 0.059, 0.975)
+	sb.set_corner_radius_all(24)
+	sb.set_border_width_all(1)
+	sb.border_color = Color(0.79, 0.66, 0.4, 0.4)
+	sb.shadow_color = Color(0.008, 0.015, 0.011, 0.58)
+	sb.shadow_size = 24
+	sb.shadow_offset = Vector2(0, 7)
 	sheet.add_theme_stylebox_override("panel", sb)
 	root.add_child(sheet)
 

@@ -8,8 +8,10 @@ const TILE := Data.TILE
 const FRONT := Data.FRONT
 const BACK := Data.BACK
 const HOUSE := Data.HOUSE
+const WaterFeedback := preload("res://scripts/water_fx.gd")
 
 var night := false
+var water_fx: WaterFX
 var _body: StaticBody3D
 var _rng := RandomNumberGenerator.new()
 var _rrng := RandomNumberGenerator.new()
@@ -101,91 +103,99 @@ func _environment(sky: String) -> void:
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 70.0
+	sun.directional_shadow_max_distance = 64.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-	sun.shadow_bias = 0.04
-	sun.light_angular_distance = 1.2
+	sun.directional_shadow_fade_start = 0.78
+	sun.shadow_bias = 0.025
+	sun.shadow_normal_bias = 1.1
+	sun.shadow_blur = 1.25
+	sun.shadow_opacity = 0.92
+	sun.light_angular_distance = 1.35
 
 	match sky:
 		"dawn":
-			sky_mat.sky_top_color = Color("#3d6bab")
-			sky_mat.sky_horizon_color = Color("#ffb277")
-			sky_mat.ground_horizon_color = Color("#c99a72")
-			sky_mat.ground_bottom_color = Color("#4e5238")
-			sky_mat.sun_angle_max = 13.0
-			sky_mat.sky_curve = 0.42
-			sun.light_color = Color("#ffd0a0")
-			sun.light_energy = 2.5
+			sky_mat.sky_top_color = Color("#355679")
+			sky_mat.sky_horizon_color = Color("#f2b184")
+			sky_mat.ground_horizon_color = Color("#c19573")
+			sky_mat.ground_bottom_color = Color("#3d4933")
+			sky_mat.sun_angle_max = 12.0
+			sky_mat.sky_curve = 0.46
+			sun.light_color = Color("#ffd5a6")
+			sun.light_energy = 2.25
 			sun.rotation_degrees = Vector3(-30, 145, 0)
-			env.ambient_light_color = Color("#7f9cc0")
-			env.ambient_light_energy = 0.2
-			env.fog_light_color = Color("#e9c6a4")
-			env.fog_density = 0.0016
+			env.ambient_light_color = Color("#809ab4")
+			env.ambient_light_energy = 0.33
+			env.fog_light_color = Color("#e7c3a8")
+			env.fog_density = 0.0021
 		"noon":
-			sky_mat.sky_top_color = Color("#1e56a8")
-			sky_mat.sky_horizon_color = Color("#bcdcee")
-			sky_mat.ground_horizon_color = Color("#b9c9a4")
-			sky_mat.ground_bottom_color = Color("#54603c")
-			sky_mat.sun_angle_max = 18.0
-			sky_mat.sky_curve = 0.35
-			sun.light_color = Color("#fff4da")
-			sun.light_energy = 2.7
-			sun.rotation_degrees = Vector3(-56, 32, 0)
-			env.ambient_light_color = Color("#9dbdd6")
-			env.ambient_light_energy = 0.4
-			env.fog_light_color = Color("#c5dceb")
-			env.fog_density = 0.0011
+			sky_mat.sky_top_color = Color("#2b5378")
+			sky_mat.sky_horizon_color = Color("#b8d4d9")
+			sky_mat.ground_horizon_color = Color("#a7b99a")
+			sky_mat.ground_bottom_color = Color("#435035")
+			sky_mat.sun_angle_max = 17.0
+			sky_mat.sky_curve = 0.44
+			sun.light_color = Color("#ffe2b0")
+			sun.light_energy = 2.35
+			sun.rotation_degrees = Vector3(-53, 34, 0)
+			env.ambient_light_color = Color("#8ea9bd")
+			env.ambient_light_energy = 0.32
+			env.fog_light_color = Color("#bbcfd3")
+			env.fog_density = 0.00165
 		"pool":
-			sky_mat.sky_top_color = Color("#3679c4")
-			sky_mat.sky_horizon_color = Color("#d9eef4")
-			sky_mat.ground_horizon_color = Color("#bed0a8")
-			sky_mat.ground_bottom_color = Color("#5c6b44")
+			sky_mat.sky_top_color = Color("#35698f")
+			sky_mat.sky_horizon_color = Color("#cbe2e5")
+			sky_mat.ground_horizon_color = Color("#aec09d")
+			sky_mat.ground_bottom_color = Color("#48593b")
 			sky_mat.sun_angle_max = 16.0
-			sky_mat.sky_curve = 0.35
-			sun.light_color = Color("#fff0cf")
-			sun.light_energy = 2.6
+			sky_mat.sky_curve = 0.43
+			sun.light_color = Color("#ffe7bd")
+			sun.light_energy = 2.32
 			sun.rotation_degrees = Vector3(-40, 118, 0)
-			env.ambient_light_color = Color("#a8c8da")
-			env.ambient_light_energy = 0.42
-			env.fog_light_color = Color("#cfe2ea")
-			env.fog_density = 0.0011
+			env.ambient_light_color = Color("#98b8c8")
+			env.ambient_light_energy = 0.35
+			env.fog_light_color = Color("#bed7db")
+			env.fog_density = 0.0015
 		_:
-			sky_mat.sky_top_color = Color("#060b16")
-			sky_mat.sky_horizon_color = Color("#1d2c47")
-			sky_mat.ground_horizon_color = Color("#202a3e")
-			sky_mat.ground_bottom_color = Color("#0a0e16")
+			sky_mat.sky_top_color = Color("#07101e")
+			sky_mat.sky_horizon_color = Color("#1d2d47")
+			sky_mat.ground_horizon_color = Color("#202b3b")
+			sky_mat.ground_bottom_color = Color("#090d14")
 			sky_mat.sun_angle_max = 3.0
-			sky_mat.sky_curve = 0.55
-			sun.light_color = Color("#a8c0f0")
-			sun.light_energy = 0.75
+			sky_mat.sky_curve = 0.58
+			sun.light_color = Color("#acc5ef")
+			sun.light_energy = 0.72
 			sun.rotation_degrees = Vector3(-42, -140, 0)
-			env.ambient_light_color = Color("#3a4a72")
-			env.ambient_light_energy = 0.38
-			env.fog_light_color = Color("#141c2e")
-			env.fog_density = 0.006
+			env.ambient_light_color = Color("#35476b")
+			env.ambient_light_energy = 0.4
+			env.fog_light_color = Color("#111b2a")
+			env.fog_density = 0.0062
 
 	sky_node.sky_material = sky_mat
 	env.sky = sky_node
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	env.background_energy_multiplier = 0.86
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 0.82
+	env.tonemap_exposure = 0.95 if night else 0.86
+	env.tonemap_white = 6.0
 	env.glow_enabled = true
-	env.glow_intensity = 0.3
-	env.glow_strength = 1.0
-	env.glow_bloom = 0.02
-	env.glow_hdr_threshold = 1.15
+	env.glow_intensity = 0.24
+	env.glow_strength = 0.95
+	env.glow_bloom = 0.035
+	env.glow_hdr_threshold = 1.02
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 	env.ssao_enabled = true
-	env.ssao_radius = 1.1
-	env.ssao_intensity = 1.6
-	env.ssao_power = 1.4
+	env.ssao_radius = 1.45
+	env.ssao_intensity = 1.85
+	env.ssao_power = 1.55
+	env.ssao_detail = 0.72
+	env.ssao_light_affect = 0.16
 	env.fog_enabled = true
-	if sky == "night":
-		env.fog_aerial_perspective = 0.0
+	env.fog_aerial_perspective = 0.0 if sky == "night" else 0.18
+	env.fog_sky_affect = 0.72
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.2
-	env.adjustment_contrast = 1.06
+	env.adjustment_saturation = 1.13
+	env.adjustment_contrast = 1.09
 	env.adjustment_brightness = 1.0
 
 	var we := WorldEnvironment.new()
@@ -197,8 +207,8 @@ func _environment(sky: String) -> void:
 	# soft bounce from the opposite side so shadows never read as flat black
 	var fill := DirectionalLight3D.new()
 	fill.name = "Fill"
-	fill.light_energy = 0.3 if night else 0.22
-	fill.light_color = Color("#9ab7d8") if not night else Color("#5f7ec0")
+	fill.light_energy = 0.26 if night else 0.25
+	fill.light_color = Color("#8eaed1") if not night else Color("#5a79b8")
 	fill.shadow_enabled = false
 	fill.rotation_degrees = Vector3(-28, -120, 0)
 	add_child(fill)
@@ -210,10 +220,12 @@ func _ground() -> void:
 	var grass_shader := preload("res://shaders/grass.gdshader")
 	var gmat := ShaderMaterial.new()
 	gmat.shader = grass_shader
-	gmat.set_shader_parameter("color_a", Color("#5b8f38"))
-	gmat.set_shader_parameter("color_b", Color("#487a2c"))
-	gmat.set_shader_parameter("dry", Color("#8c9150"))
-	gmat.set_shader_parameter("cell_shade", 0.05 if night else 0.035)
+	gmat.set_shader_parameter("color_a", Color("#4d7735"))
+	gmat.set_shader_parameter("color_b", Color("#3c602b"))
+	gmat.set_shader_parameter("color_deep", Color("#2b4722"))
+	gmat.set_shader_parameter("dry", Color("#8b9360"))
+	gmat.set_shader_parameter("dry_amount", 0.1)
+	gmat.set_shader_parameter("cell_shade", 0.028 if night else 0.024)
 
 	# ground is built as four slabs around a hole for the pool, so the water
 	# basin can actually sit below grade
@@ -249,10 +261,12 @@ func _lawns() -> void:
 	for side in [FRONT, BACK]:
 		var m := ShaderMaterial.new()
 		m.shader = grass_shader
-		m.set_shader_parameter("color_a", Color("#5d963a") if not night else Color("#436a34"))
-		m.set_shader_parameter("color_b", Color("#4a7f2c") if not night else Color("#385c2a"))
-		m.set_shader_parameter("dry", Color("#9aa35a"))
-		m.set_shader_parameter("cell_shade", 0.05)
+		m.set_shader_parameter("color_a", Color("#557f3b") if not night else Color("#3f6633"))
+		m.set_shader_parameter("color_b", Color("#40672f") if not night else Color("#33542b"))
+		m.set_shader_parameter("color_deep", Color("#2d4e25") if not night else Color("#263f22"))
+		m.set_shader_parameter("dry", Color("#929761"))
+		m.set_shader_parameter("dry_amount", 0.1)
+		m.set_shader_parameter("cell_shade", 0.032)
 		var w: float = side["x1"] - side["x0"]
 		var cx: float = (side["x0"] + side["x1"]) * 0.5
 		var water_rows: Array = side["water_rows"]
@@ -289,9 +303,9 @@ func _pool() -> void:
 	var d := pz1 - pz0
 	var surf: float = Data.POOL["surface_y"]
 
-	var cope := _mat(Color("#dcd4bd"))
-	var tile := _mat(Color("#7fc3d6"))
-	var deep := _mat(Color("#2f7f9c"))
+	var cope := _mat(Color("#d5cbb2"), {"roughness": 0.72, "gloss": 0.1})
+	var tile := _mat(Color("#78acb9"), {"roughness": 0.5, "gloss": 0.16})
+	var deep := _mat(Color("#28657a"), {"roughness": 0.82})
 
 	# coping ring
 	_box(Vector3(w + 0.5, 0.1, 0.28), Vector3(cx, 0.01, pz0 - 0.14), cope)
@@ -310,15 +324,21 @@ func _pool() -> void:
 
 	var wmat := ShaderMaterial.new()
 	wmat.shader = preload("res://shaders/water.gdshader")
-	wmat.set_shader_parameter("shallow", Color("#4fc0d0") if not night else Color("#2f6d84"))
-	wmat.set_shader_parameter("deep", Color("#0a5a7e") if not night else Color("#08293e"))
+	wmat.set_shader_parameter("shallow", Color("#45a7b2") if not night else Color("#2f6a7e"))
+	wmat.set_shader_parameter("deep", Color("#06475e") if not night else Color("#08283a"))
+	wmat.set_shader_parameter("foam", Color("#d9eeee") if not night else Color("#6e95a2"))
+	wmat.set_shader_parameter("alpha", 0.84)
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(w, d)
-	plane.subdivide_width = 12
-	plane.subdivide_depth = 4
+	plane.subdivide_width = 28
+	plane.subdivide_depth = 8
 	var water := Art.put(self, plane, wmat, Vector3(cx, surf, cz))
 	water.name = "Water"
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	water_fx = WaterFeedback.new()
+	water_fx.name = "WaterFeedback"
+	water_fx.surface_y = surf
+	add_child(water_fx)
 
 	# steps into the shallow end
 	for i in range(3):
@@ -1276,31 +1296,60 @@ func _scenery() -> void:
 
 
 func _tree(pos: Vector3, s: float) -> void:
-	var trunk := _mat(Color("#7a5a3c"))
-	_cyl(0.16 * s, 1.7 * s, pos + Vector3(0, 0.85 * s, 0), trunk, Vector3.ZERO, 8, true)
-	var leaf_a := _mat(Color("#3f7a3a"), {"bands": 2.0, "rim": 0.3})
-	var leaf_b := _mat(Color("#4b8f42"), {"bands": 2.0, "rim": 0.3})
-	for i in range(4):
-		var a := TAU * i / 4.0 + 0.6
-		var r := 0.55 * s
-		var p := pos + Vector3(cos(a) * r, (1.9 + (i % 2) * 0.55) * s, sin(a) * r)
-		var mi := Art.ball(self, (0.9 + (i % 3) * 0.12) * s, p, leaf_a if i % 2 == 0 else leaf_b, Vector3(1.0, 0.82, 1.0), 10, 7)
+	var bark := _mat(Color("#76573b"), {"bands": 3.0, "roughness": 0.95})
+	var bark_hi := _mat(Color("#8b6a49"), {"bands": 2.0, "roughness": 0.95})
+	_cyl(0.16 * s, 1.7 * s, pos + Vector3(0, 0.85 * s, 0), bark, Vector3.ZERO, 8, true)
+	# Two visible limbs break up the lollipop silhouette.
+	for side in [-1, 1]:
+		_cyl(0.07 * s, 0.85 * s, pos + Vector3(side * 0.28 * s, 1.55 * s, 0.08 * s),
+			bark if side < 0 else bark_hi, Vector3(0, 0, side * 0.72), 7)
+	var leaf_dark := _mat(Color("#315f35"), {"bands": 3.0, "rim": 0.24})
+	var leaf_mid := _mat(Color("#447c3d"), {"bands": 3.0, "rim": 0.28})
+	var leaf_hi := _mat(Color("#5b934a"), {"bands": 3.0, "rim": 0.32})
+	for i in range(7):
+		var a := TAU * float(i) / 7.0 + 0.45
+		var r := (0.44 + 0.26 * float(i % 3)) * s
+		var y := (1.9 + 0.28 * float(i % 2) + 0.2 * sin(a * 2.0)) * s
+		var p := pos + Vector3(cos(a) * r, y, sin(a) * r * 0.82)
+		var leaf_mat := leaf_dark if i % 3 == 0 else (leaf_mid if i % 3 == 1 else leaf_hi)
+		var radius := (0.7 + 0.12 * float(i % 2)) * s
+		var mi := Art.ball(self, radius, p, leaf_mat, Vector3(1.06, 0.78, 1.02), 11, 7)
 		mi.rotation.y = a
-	Art.ball(self, 1.0 * s, pos + Vector3(0, 2.55 * s, 0), leaf_b, Vector3(1.0, 0.8, 1.0), 10, 7)
+	# A sunlit cap makes the canopy read as layered foliage rather than one blob.
+	Art.ball(self, 0.82 * s, pos + Vector3(-0.12 * s, 2.62 * s, -0.14 * s),
+		leaf_hi, Vector3(1.18, 0.72, 1.1), 11, 7)
+	for i in range(3):
+		var a := 0.8 + float(i) * 2.05
+		Art.ball(self, 0.5 * s, pos + Vector3(cos(a) * 0.72 * s, 2.2 * s, sin(a) * 0.56 * s),
+			leaf_mid, Vector3(1.15, 0.72, 1.0), 9, 6)
 
 
 func _bush(pos: Vector3, s: float) -> void:
-	var m := _mat(Color("#4a8a3e"), {"bands": 2.0})
-	var m2 := _mat(Color("#3f7a35"), {"bands": 2.0})
-	for i in range(3):
-		var p := pos + Vector3((i - 1) * 0.34 * s, 0.3 * s + (i % 2) * 0.12, _rng.randf_range(-0.14, 0.14))
-		Art.ball(self, (0.42 + i * 0.04) * s, p, m if i % 2 == 0 else m2, Vector3(1.0, 0.85, 1.0), 8, 6)
+	var tones := [
+		_mat(Color("#3d7136"), {"bands": 3.0, "rim": 0.24}),
+		_mat(Color("#4e8842"), {"bands": 3.0, "rim": 0.28}),
+		_mat(Color("#60964d"), {"bands": 3.0, "rim": 0.3}),
+	]
+	for i in range(5):
+		var sway := sin(float(i) * 2.1 + pos.x * 0.35)
+		var p := pos + Vector3((i - 2.0) * 0.24 * s + sway * 0.045,
+			0.27 * s + (i % 2) * 0.11 + sway * 0.025,
+			sin(float(i) * 1.7 + pos.z) * 0.12)
+		var mi := Art.ball(self, (0.32 + (i % 3) * 0.06) * s, p, tones[i % tones.size()],
+			Vector3(1.05, 0.82 + 0.04 * (i % 2), 0.94), 9, 6)
+		mi.rotation.y = float(i) * 0.9
 
 
 func _flower(pos: Vector3, col: Color) -> void:
 	var stem := _mat(Color("#4f8a3c"), {"outline": false})
 	_cyl(0.012, 0.28, pos + Vector3(0, 0.14, 0), stem, Vector3.ZERO, 4)
-	Art.ball(self, 0.06, pos + Vector3(0, 0.31, 0), _mat(col, {"bands": 2.0, "outline": false}), Vector3(1.0, 0.5, 1.0), 6, 4)
+	var petal := _mat(col, {"bands": 2.0, "outline": false})
+	for i in range(5):
+		var a := TAU * float(i) / 5.0 + pos.x * 0.6
+		Art.ball(self, 0.032, pos + Vector3(cos(a) * 0.034, 0.315, sin(a) * 0.034),
+			petal, Vector3(1.1, 0.42, 0.82), 7, 5)
+	Art.ball(self, 0.02, pos + Vector3(0, 0.337, 0), _mat(Color("#e8be5d"), {"outline": false}),
+		Vector3(1.0, 0.55, 1.0), 6, 4)
 
 
 func _lamp_post(pos: Vector3) -> void:

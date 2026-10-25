@@ -380,6 +380,28 @@ static func zombie_kinds() -> Array:
 	return out
 
 
+## 金币掉落表：击杀时的掉率与枚数。越硬的僵尸赏金越高；
+## 伴舞掉率低（它自己没出场费）。金币目前只进钱袋，用途待定。
+const COIN_TABLE := {
+	"basic": {"chance": 0.32, "n": 1},
+	"cone": {"chance": 0.36, "n": 1},
+	"flag": {"chance": 0.40, "n": 1},
+	"newspaper": {"chance": 0.36, "n": 1},
+	"pole": {"chance": 0.45, "n": 1},
+	"bucket": {"chance": 0.50, "n": 1},
+	"screendoor": {"chance": 0.50, "n": 1},
+	"balloon": {"chance": 0.45, "n": 1},
+	"backup": {"chance": 0.25, "n": 1},
+	"dancer": {"chance": 0.60, "n": 2},
+	"football": {"chance": 0.65, "n": 2},
+	"gargantuar": {"chance": 1.0, "n": 5},
+}
+
+
+static func coin_drop(kind: String) -> Dictionary:
+	return COIN_TABLE.get(kind, {"chance": 0.3, "n": 1})
+
+
 static func plant(kind: String) -> Dictionary:
 	return PLANTS.get(kind, PLANTS["sunflower"])
 

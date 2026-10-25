@@ -203,6 +203,12 @@ for i in range(5):
 _buf = add(_buf, noise(0.35, 0.22, 2.6, 0.7), 2.45, 0.6)
 write("chimney", fit(_buf, 2.85), 0.62)
 
+# --- coins ----------------------------------------------------------------
+# a bright two-note ding: high tick, then a longer bell on top
+write("coin", fit(mix(tone(1318, 1318, 0.08, "sine", 0.3, decay=3.4),
+                      add(silence(0.05), tone(1760, 1760, 0.2, "sine", 0.24, decay=3.0))),
+                 0.24), 0.6)
+
 # --- ambience -------------------------------------------------------------
 # soft wind loop, 8 s, seamless-ish
 random.seed(99)

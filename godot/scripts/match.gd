@@ -39,6 +39,7 @@ var _summoning := false
 var zombies: Array = []
 var peas: Array = []
 var suns: Array = []
+var coins: Array = []
 var mowers: Array = []
 
 var cooldowns: Dictionary = {}
@@ -49,6 +50,7 @@ var shove_kills := 0
 
 var stat_kills := 0
 var stat_sun := 0
+var stat_coins := 0
 var stat_plants := 0
 var mowers_used := 0
 
@@ -353,7 +355,7 @@ func collect_nearby() -> bool:
 			best_d = d
 			best = s
 	if best == null:
-		return false
+		return _collect_coin_in_view()
 	_collect(best)
 	return true
 
@@ -734,6 +736,67 @@ func spawn_sun(pos: Vector3, from_plant: bool, value := 25) -> void:
 	suns.append(orb)
 
 
+# --- coins ------------------------------------------------------------------
+
+func spawn_coin(pos: Vector3, n := 1) -> void:
+	for i in range(n):
+		var c := CoinOrb.new()
+		c.setup(pos + Vector3(randf_range(-0.12, 0.12), i * 0.14, randf_range(-0.12, 0.12)), 1)
+		add_child(c)
+		coins.append(c)
+
+
+## 击杀掉落：按 Data.COIN_TABLE 掷骰子；死在小推车或魅惑倒计时手里一样给钱。
+func _drop_coins(z: ZombieUnit) -> void:
+	if not is_instance_valid(z):
+		return
+	var drop := Data.coin_drop(z.kind)
+	if randf() >= float(drop["chance"]):
+		return
+	spawn_coin(z.global_position + Vector3(0, 0.9, 0), int(drop["n"]))
+
+
+func _update_coins(delta: float) -> void:
+	var feet: Vector3 = player.global_position
+	for c in coins:
+		if not is_instance_valid(c) or c.collected:
+			continue
+		if c.advance(delta, feet):
+			_collect_coin(c)
+
+
+func _collect_coin(c: CoinOrb) -> void:
+	if c.collected:
+		return
+	stat_coins += c.value
+	App.sfx_at("coin", c.global_position, -7.0, randf_range(0.92, 1.14))
+	_burst(c.global_position, Color("#ffdf7a"), 6, 1.4, 0.06)
+	c.pop()
+
+
+## E 键的第二优先目标：准星前方的金币（没有阳光才轮到它）。
+func _collect_coin_in_view() -> bool:
+	var eye := player.eye_position()
+	var best: CoinOrb = null
+	var best_d := 99.0
+	for c in coins:
+		if not is_instance_valid(c) or c.collected:
+			continue
+		var d: float = c.global_position.distance_to(eye)
+		if d > 9.0:
+			continue
+		var to: Vector3 = (c.global_position - eye).normalized()
+		if to.dot(player.look_dir()) < 0.86:
+			continue
+		if d < best_d:
+			best_d = d
+			best = c
+	if best == null:
+		return false
+	_collect_coin(best)
+	return true
+
+
 func breach(z: ZombieUnit) -> void:
 	var m := _mower_for(z.lane)
 	if m != null and not m.spent:
@@ -765,7 +828,9 @@ func spawn_zombie(kind: String, lane: int) -> void:
 	var jitter := randf_range(-0.18, 0.18)
 	z.setup(kind, sub_lane, Vector3(float(yard["spawn_x"]), 0.02, Data.row_z(yard, sub_lane) + jitter), dir)
 	add_child(z)
-	z.died.connect(func() -> void: stat_kills += 1)
+	z.died.connect(func() -> void:
+		stat_kills += 1
+		_drop_coins(z))
 	zombies.append(z)
 	var summon := int(Data.zombie(kind).get("summon", 0))
 	if summon > 0 and not _summoning:
@@ -888,15 +953,47 @@ func update(delta: float) -> void:
 	for z in zombies:
 		if is_instance_valid(z) and not z.dead:
 			z.tick(delta, self)
+	_update_zombie_wading(delta)
 
 	_update_peas(delta)
 	_update_lobs(delta)
 	_update_craters(delta)
 	_update_mowers(delta)
 	_update_suns(delta)
+	_update_coins(delta)
 	_update_aim()
 	_cleanup()
 	_check_end()
+
+
+## Zombies entering the pool push real water too. Keep the cadence lower than
+## the player's so a full wave does not drown the mix or the frame budget.
+func _update_zombie_wading(delta: float) -> void:
+	if world == null or not is_instance_valid(world) or world.water_fx == null:
+		return
+	for z in zombies:
+		if not is_instance_valid(z) or z.dead or z.dying > 0.0 or z.flying > 0.0:
+			continue
+		if not Data.is_water(yard, z.lane):
+			continue
+		var in_pool: bool = z.global_position.x >= float(yard["x0"]) and z.global_position.x <= float(yard["x1"])
+		var was_wet: bool = bool(z.get_meta("water_wet", false))
+		if in_pool and not was_wet:
+			z.set_meta("water_wet", true)
+			z.set_meta("water_step", 0.52)
+			world.water_fx.splash(z.global_position, 0.62, false)
+			App.sfx_at("step_water", z.global_position, -9.0, randf_range(0.68, 0.82))
+		elif in_pool:
+			var water_step := float(z.get_meta("water_step", 0.0)) - delta
+			if water_step <= 0.0:
+				water_step = 0.62
+				world.water_fx.splash(z.global_position, 0.25, true)
+				if randf() < 0.32:
+					App.sfx_at("step_water", z.global_position, -17.0, randf_range(0.64, 0.78))
+			z.set_meta("water_step", water_step)
+		elif was_wet:
+			z.set_meta("water_wet", false)
+			world.water_fx.splash(z.global_position, 0.34, false)
 
 
 func _update_peas(delta: float) -> void:
@@ -1000,6 +1097,11 @@ func _cleanup() -> void:
 		if is_instance_valid(s) and not s.collected:
 			alive_s.append(s)
 	suns = alive_s
+	var alive_c: Array = []
+	for c in coins:
+		if is_instance_valid(c) and not c.collected:
+			alive_c.append(c)
+	coins = alive_c
 	for key in plants.keys():
 		var p = plants[key]
 		if not is_instance_valid(p) or p.dead:
@@ -1128,6 +1230,7 @@ func snapshot() -> Dictionary:
 		"state": state,
 		"sun": sun,
 		"plants": plants.size() + pads.size() + shells.size(),
+		"coins": stat_coins,
 		"zombies": zombies.size(),
 		"queued": spawn_queue.size(),
 		"time": snappedf(time, 0.1),

@@ -15,6 +15,7 @@ var player_ref
 
 var root: Control
 var _sun: SunPanel
+var _coin: CoinBadge
 var _wave: WavePanel
 var _seed_wrap: Panel
 var _seed_box: HBoxContainer
@@ -50,12 +51,12 @@ class SunPanel extends Control:
 		custom_minimum_size = Vector2(176, 68)
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_bg = StyleBoxFlat.new()
-		_bg.bg_color = Color(0.07, 0.12, 0.09, 0.82)
-		_bg.set_corner_radius_all(16)
-		_bg.set_border_width_all(2)
-		_bg.border_color = Color(0.85, 0.72, 0.34, 0.55)
-		_bg.shadow_color = Color(0, 0, 0, 0.35)
-		_bg.shadow_size = 8
+		_bg.bg_color = Color(0.052, 0.092, 0.071, 0.9)
+		_bg.set_corner_radius_all(18)
+		_bg.set_border_width_all(1)
+		_bg.border_color = Color(0.78, 0.63, 0.35, 0.46)
+		_bg.shadow_color = Color(0.015, 0.025, 0.018, 0.4)
+		_bg.shadow_size = 10
 
 	func _process(delta: float) -> void:
 		_t += delta
@@ -64,17 +65,51 @@ class SunPanel extends Control:
 
 	func _draw() -> void:
 		draw_style_box(_bg, Rect2(Vector2.ZERO, size))
+		draw_line(Vector2(18, 1.5), Vector2(size.x - 18, 1.5), Color(1.0, 0.88, 0.6, 0.24), 1.0, true)
 		var c := Vector2(38, 34)
 		var pulse := 1.0 + sin(_t * 2.2) * 0.03
-		draw_circle(c, 18.0 * pulse, Color("#f2c14e"))
-		draw_circle(c, 14.0 * pulse, Color("#ffd977"))
+		draw_circle(c, 21.0 * pulse, Color(0.9, 0.68, 0.28, 0.14))
+		draw_arc(c, 18.5 * pulse, 0.0, TAU, 28, Color(0.96, 0.79, 0.39, 0.42), 1.2, true)
+		draw_circle(c, 14.0 * pulse, Color("#e7b94e"))
+		draw_circle(c, 10.5 * pulse, Color("#f6d377"))
 		for i in range(8):
 			var a := TAU * i / 8.0 + _t * 0.25
 			var d := Vector2(cos(a), sin(a))
-			draw_line(c + d * 20.0, c + d * 25.0, Color(1.0, 0.85, 0.42, 0.9), 2.5, true)
+			draw_line(c + d * 20.0, c + d * 24.5, Color(1.0, 0.85, 0.42, 0.82), 2.0, true)
 		var f: Font = App.font_bold
-		draw_string(f, Vector2(68, 44), str(int(round(shown))), HORIZONTAL_ALIGNMENT_LEFT, 100, 30, Color("#ffe9a8"))
-		draw_string(App.font_body, Vector2(70, 58), "阳光", HORIZONTAL_ALIGNMENT_LEFT, 60, 11, Color(1, 1, 1, 0.45))
+		draw_string(f, Vector2(68, 44), str(int(round(shown))), HORIZONTAL_ALIGNMENT_LEFT, 100, 30, Color("#ffe6a1"))
+		draw_string(App.font_body, Vector2(70, 58), "阳光", HORIZONTAL_ALIGNMENT_LEFT, 60, 11, Color(0.95, 0.9, 0.78, 0.52))
+
+
+class CoinBadge extends Control:
+	var shown := 0
+	var _bg: StyleBoxFlat
+	var _t := 0.0
+
+	func _ready() -> void:
+		custom_minimum_size = Vector2(176, 42)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_bg = StyleBoxFlat.new()
+		_bg.bg_color = Color(0.07, 0.06, 0.04, 0.82)
+		_bg.set_corner_radius_all(14)
+		_bg.set_border_width_all(1)
+		_bg.border_color = Color(0.85, 0.7, 0.35, 0.32)
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		draw_style_box(_bg, Rect2(Vector2.ZERO, size))
+		# 一枚立着的金币：外圈 + 内芯 + 一道高光弧
+		var c := Vector2(30, 21)
+		draw_circle(c, 13.5, Color("#e7b94e"))
+		draw_circle(c, 9.5, Color("#f6d377"))
+		draw_arc(c, 13.5, -0.6, PI + 0.6, 22, Color(1.0, 0.92, 0.62, 0.7), 1.4, true)
+		var shine: float = 0.75 + sin(_t * 2.6) * 0.25
+		draw_circle(c, 3.0, Color(1.0, 0.95, 0.75, 0.5 * shine))
+		draw_string(App.font_bold, Vector2(52, 28), str(shown), HORIZONTAL_ALIGNMENT_LEFT, 86, 20, Color("#ffe6a1"))
+		draw_string(App.font_body, Vector2(136, 28), "金币", HORIZONTAL_ALIGNMENT_LEFT, 40, 12, Color(0.95, 0.9, 0.78, 0.55))
 
 
 class WavePanel extends Control:
@@ -91,10 +126,12 @@ class WavePanel extends Control:
 		custom_minimum_size = Vector2(470, 62)
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_bg = StyleBoxFlat.new()
-		_bg.bg_color = Color(0.07, 0.12, 0.09, 0.78)
-		_bg.set_corner_radius_all(14)
+		_bg.bg_color = Color(0.052, 0.092, 0.071, 0.88)
+		_bg.set_corner_radius_all(16)
 		_bg.set_border_width_all(1)
-		_bg.border_color = Color(0.7, 0.85, 0.6, 0.22)
+		_bg.border_color = Color(0.72, 0.64, 0.44, 0.3)
+		_bg.shadow_color = Color(0.015, 0.025, 0.018, 0.35)
+		_bg.shadow_size = 8
 
 	func set_data(p_level: String, p_prog: float, p_waves: int, p_alive: int,
 			p_endless := false, p_wave := 0) -> void:
@@ -108,20 +145,24 @@ class WavePanel extends Control:
 
 	func _draw() -> void:
 		draw_style_box(_bg, Rect2(Vector2.ZERO, size))
+		draw_line(Vector2(18, 1.5), Vector2(size.x - 18, 1.5), Color(1.0, 0.9, 0.66, 0.2), 1.0, true)
 		var f: Font = App.font_bold
 		var head := level_name
 		if endless:
 			head = "%s · 第 %d 波" % [level_name, wave_num]
-		draw_string(f, Vector2(18, 24), head, HORIZONTAL_ALIGNMENT_LEFT, 300, 16, Color("#f6eedb"))
+		draw_string(f, Vector2(18, 24), head, HORIZONTAL_ALIGNMENT_LEFT, 300, 16, Color("#f4eddd"))
 		draw_string(App.font_body, Vector2(size.x - 130, 24), "僵尸 %d" % alive, HORIZONTAL_ALIGNMENT_RIGHT, 112, 13,
-			Color(1.0, 0.82, 0.62) if alive > 0 else Color(1, 1, 1, 0.5))
+			Color(0.95, 0.78, 0.57, 0.92) if alive > 0 else Color(0.92, 0.9, 0.82, 0.46))
 
 		var bar := Rect2(18, 34, size.x - 36, 10)
-		draw_rect(bar, Color(0.02, 0.05, 0.04, 0.75), true)
+		draw_rect(bar, Color(0.025, 0.05, 0.04, 0.82), true)
 		var fill_w: float = bar.size.x * clamp(progress, 0.0, 1.0)
 		if fill_w > 0.5:
-			draw_rect(Rect2(bar.position, Vector2(fill_w, bar.size.y)), Color("#7cbb5c"), true)
-			draw_rect(Rect2(bar.position, Vector2(fill_w, bar.size.y * 0.45)), Color(1, 1, 1, 0.16), true)
+			draw_rect(Rect2(bar.position, Vector2(fill_w, bar.size.y)), Color("#6f9954"), true)
+			draw_rect(Rect2(bar.position, Vector2(fill_w, bar.size.y * 0.45)), Color(1, 0.98, 0.88, 0.18), true)
+			draw_line(Vector2(bar.position.x + fill_w, bar.position.y),
+				Vector2(bar.position.x + fill_w, bar.position.y + bar.size.y),
+				Color("#e6c378"), 1.5, true)
 		if endless:
 			# no fixed wave count: the bar is the countdown to the next wave
 			draw_string(App.font_body, Vector2(size.x - 168, 50), "下一波", HORIZONTAL_ALIGNMENT_RIGHT, 40, 11,
@@ -209,16 +250,16 @@ class SeedCard extends Control:
 		custom_minimum_size = Vector2(98, 126)
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		_bg = StyleBoxFlat.new()
-		_bg.bg_color = Color(0.10, 0.16, 0.12, 0.9)
-		_bg.set_corner_radius_all(10)
-		_bg.set_border_width_all(2)
-		_bg.border_color = Color(0.75, 0.68, 0.45, 0.35)
-		_bg.shadow_color = Color(0, 0, 0, 0.4)
-		_bg.shadow_size = 6
+		_bg.bg_color = Color(0.075, 0.125, 0.095, 0.94)
+		_bg.set_corner_radius_all(12)
+		_bg.set_border_width_all(1)
+		_bg.border_color = Color(0.72, 0.63, 0.42, 0.38)
+		_bg.shadow_color = Color(0.012, 0.02, 0.014, 0.46)
+		_bg.shadow_size = 8
 		_bg_sel = _bg.duplicate()
-		_bg_sel.border_color = Color("#ffe08a")
-		_bg_sel.set_border_width_all(3)
-		_bg_sel.bg_color = Color(0.18, 0.27, 0.16, 0.95)
+		_bg_sel.border_color = Color("#f0d187")
+		_bg_sel.set_border_width_all(2)
+		_bg_sel.bg_color = Color(0.14, 0.22, 0.15, 0.97)
 		mouse_entered.connect(func() -> void:
 			_hover = true
 			queue_redraw()
@@ -249,17 +290,19 @@ class SeedCard extends Control:
 	func _draw() -> void:
 		var r := Rect2(Vector2.ZERO, size)
 		draw_style_box(_bg_sel if is_selected else _bg, r)
-		var txt := Color("#f6eedb") if affordable else Color(0.85, 0.85, 0.8, 0.45)
+		draw_line(Vector2(10, 1.5), Vector2(size.x - 10, 1.5), Color(1.0, 0.9, 0.66, 0.17), 1.0, true)
+		var txt := Color("#f4eddd") if affordable else Color(0.82, 0.83, 0.78, 0.42)
 		if _hover and affordable:
-			draw_rect(Rect2(Vector2(3, 3), size - Vector2(6, 6)), Color(1, 1, 1, 0.05), true)
+			draw_rect(Rect2(Vector2(3, 3), size - Vector2(6, 6)), Color(1.0, 0.95, 0.78, 0.055), true)
 
 		# icon window
-		draw_rect(Rect2(Vector2(9, 26), Vector2(80, 70)), Color(0.03, 0.06, 0.05, 0.55), true)
+		draw_rect(Rect2(Vector2(9, 26), Vector2(80, 70)), Color(0.025, 0.052, 0.037, 0.68), true)
 
 		# cost badge
-		draw_circle(Vector2(16, 16), 7.0, Color("#f2c14e"))
+		draw_circle(Vector2(16, 16), 7.2, Color("#caa75a"))
+		draw_circle(Vector2(15, 15), 5.2, Color("#ebcc80"))
 		draw_string(App.font_bold, Vector2(25, 22), str(cost), HORIZONTAL_ALIGNMENT_LEFT, 60, 14,
-			Color("#ffe9a8") if affordable else Color(1.0, 0.6, 0.5, 0.8))
+			Color("#ffe6a4") if affordable else Color(1.0, 0.6, 0.5, 0.8))
 
 		# hotkey
 		draw_string(App.font_body, Vector2(size.x - 18, 21), str(index + 1), HORIZONTAL_ALIGNMENT_LEFT, 16, 12,
@@ -305,6 +348,11 @@ func _ready() -> void:
 	_sun.size = Vector2(176, 68)
 	root.add_child(_sun)
 
+	_coin = CoinBadge.new()
+	_coin.position = Vector2(24, 96)
+	_coin.size = Vector2(176, 42)
+	root.add_child(_coin)
+
 	_wave = WavePanel.new()
 	_wave.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_wave.position = Vector2(-235, 18)
@@ -323,7 +371,7 @@ func _ready() -> void:
 	_hint.size = Vector2(800, 28)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.add_theme_font_size_override("font_size", 15)
-	_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.78))
+	_hint.add_theme_color_override("font_color", Color(0.94, 0.91, 0.81, 0.72))
 	root.add_child(_hint)
 
 	_seed_wrap = Panel.new()
@@ -345,7 +393,7 @@ func _ready() -> void:
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_prompt.add_theme_font_override("font", App.font_bold)
 	_prompt.add_theme_font_size_override("font_size", 17)
-	_prompt.add_theme_color_override("font_color", Color("#ffe9a8"))
+	_prompt.add_theme_color_override("font_color", Color("#f3d58e"))
 	_prompt.add_theme_constant_override("outline_size", 6)
 	_prompt.add_theme_color_override("font_outline_color", Color(0.08, 0.06, 0.03, 0.9))
 	_prompt.text = ""
@@ -358,7 +406,7 @@ func _ready() -> void:
 	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_banner.add_theme_font_override("font", App.font_bold)
 	_banner.add_theme_font_size_override("font_size", 44)
-	_banner.add_theme_color_override("font_color", Color("#ffe08a"))
+	_banner.add_theme_color_override("font_color", Color("#f2d17e"))
 	_banner.add_theme_constant_override("outline_size", 10)
 	_banner.add_theme_color_override("font_outline_color", Color(0.16, 0.06, 0.02, 0.9))
 	_banner.modulate.a = 0.0
@@ -370,16 +418,17 @@ func _ready() -> void:
 
 func _panel_style() -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.07, 0.11, 0.09, 0.86)
-	sb.set_corner_radius_all(18)
+	sb.bg_color = Color(0.048, 0.086, 0.066, 0.92)
+	sb.set_corner_radius_all(20)
 	sb.set_border_width_all(1)
-	sb.border_color = Color(0.75, 0.8, 0.55, 0.2)
+	sb.border_color = Color(0.76, 0.64, 0.38, 0.34)
 	sb.content_margin_left = 10
 	sb.content_margin_right = 10
 	sb.content_margin_top = 8
 	sb.content_margin_bottom = 8
-	sb.shadow_color = Color(0, 0, 0, 0.45)
-	sb.shadow_size = 10
+	sb.shadow_color = Color(0.012, 0.022, 0.015, 0.52)
+	sb.shadow_size = 14
+	sb.shadow_offset = Vector2(0, 4)
 	return sb
 
 
@@ -389,6 +438,7 @@ func bind(m, p) -> void:
 	_level_name = str(m.level["name"])
 	_sun.target = float(m.sun)
 	_sun.shown = float(m.sun)
+	_coin.shown = App.wallet() + m.stat_coins
 	_build_cards(m)
 	m.wave_banner.connect(banner)
 	m.state_changed.connect(_on_state)
@@ -440,6 +490,7 @@ func _process(delta: float) -> void:
 	if match_ref == null or not is_instance_valid(match_ref):
 		return
 	_sun.target = float(match_ref.sun)
+	_coin.shown = App.wallet() + match_ref.stat_coins
 	_wave.set_data(_level_name, match_ref.progress(), match_ref.level["waves"].size(),
 		match_ref.zombies.size(), match_ref.endless, match_ref.endless_wave)
 	_hint.text = match_ref.hint_text()
@@ -611,16 +662,17 @@ func _build_pause() -> void:
 
 func _dialog_style() -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.07, 0.12, 0.09, 0.97)
-	sb.set_corner_radius_all(22)
-	sb.set_border_width_all(2)
-	sb.border_color = Color(0.7, 0.85, 0.55, 0.32)
+	sb.bg_color = Color(0.05, 0.09, 0.069, 0.975)
+	sb.set_corner_radius_all(24)
+	sb.set_border_width_all(1)
+	sb.border_color = Color(0.8, 0.67, 0.4, 0.44)
 	sb.content_margin_left = 26
 	sb.content_margin_right = 26
 	sb.content_margin_top = 22
 	sb.content_margin_bottom = 22
-	sb.shadow_color = Color(0, 0, 0, 0.6)
-	sb.shadow_size = 24
+	sb.shadow_color = Color(0.01, 0.018, 0.012, 0.62)
+	sb.shadow_size = 28
+	sb.shadow_offset = Vector2(0, 8)
 	return sb
 
 
@@ -754,21 +806,23 @@ func show_end(won: bool, stats: Dictionary) -> void:
 		s.add_theme_color_override("font_color", Color("#f2c14e") if i < stars else Color(1, 1, 1, 0.16))
 
 	if endless:
-		_end_stats.text = "撑过 %d 波    击杀 %d    种植 %d\n存活 %s    收集阳光 %d\n最佳记录 %d 波" % [
+		_end_stats.text = "撑过 %d 波    击杀 %d    种植 %d\n存活 %s    收集阳光 %d    金币 +%d\n最佳记录 %d 波" % [
 			waves,
 			int(stats.get("kills", 0)),
 			int(stats.get("plants", 0)),
 			fmt_time(float(stats.get("time", 0.0))),
 			int(stats.get("sun", 0)),
+			int(stats.get("coins", 0)),
 			int(stats.get("best", waves)),
 		]
 	else:
-		_end_stats.text = "用时 %s    击杀 %d    种植 %d\n剩余小推车 %d    收集阳光 %d" % [
+		_end_stats.text = "用时 %s    击杀 %d    种植 %d\n剩余小推车 %d    收集阳光 %d    金币 +%d" % [
 			fmt_time(float(stats.get("time", 0.0))),
 			int(stats.get("kills", 0)),
 			int(stats.get("plants", 0)),
 			int(stats.get("mowers", 0)),
 			int(stats.get("sun", 0)),
+			int(stats.get("coins", 0)),
 		]
 	_next_btn.visible = bool(stats.get("has_next", false)) and won
 	_end.modulate.a = 0.0

@@ -5,18 +5,18 @@ extends Node
 const SAVE_PATH := "user://garden.cfg"
 
 const C := {
-	"cream": Color("#f6eedb"),
-	"paper": Color("#efe4cc"),
-	"ink": Color("#221d16"),
-	"deep": Color("#16281d"),
-	"forest": Color("#274b33"),
-	"leaf": Color("#5f9d47"),
-	"leaf_hi": Color("#7cbb5c"),
-	"gold": Color("#f2c14e"),
-	"gold_hi": Color("#ffd977"),
-	"danger": Color("#d0503f"),
-	"ice": Color("#8fd4ea"),
-	"shadow": Color(0.05, 0.06, 0.04, 0.72),
+	"cream": Color("#f3ecd9"),
+	"paper": Color("#e7ddc6"),
+	"ink": Color("#20241b"),
+	"deep": Color("#0f1d16"),
+	"forest": Color("#274535"),
+	"leaf": Color("#648e4d"),
+	"leaf_hi": Color("#85ae66"),
+	"gold": Color("#d8b25e"),
+	"gold_hi": Color("#f2d38a"),
+	"danger": Color("#c45a48"),
+	"ice": Color("#98cedb"),
+	"shadow": Color(0.04, 0.06, 0.045, 0.74),
 }
 
 var font_body: FontFile
@@ -30,6 +30,7 @@ var save := {
 	"picks": {},
 	"endless_best": 0,
 	"endless_runs": 0,
+	"coins": 0,
 }
 var settings := {
 	"sensitivity": 0.0022,
@@ -63,7 +64,7 @@ const SFX_NAMES := [
 	"click", "select", "deny", "plant", "dig", "shoot", "hit", "chomp",
 	"explode", "shove", "freeze", "sun", "groan1", "groan2", "groan3",
 	"wave", "mower", "step_grass", "step_wood", "step_water", "win", "lose",
-	"door_open", "door_close", "chimney",
+	"door_open", "door_close", "chimney", "coin",
 ]
 
 
@@ -142,6 +143,12 @@ func _sb(color: Color, radius := 8, border := 0, border_color := Color.TRANSPARE
 	sb.content_margin_top = 8
 	sb.content_margin_bottom = 8
 	sb.anti_aliasing = true
+	# A shallow warm-black shadow gives panels and buttons the weight of
+	# printed labels instead of flat translucent glass.
+	if color.a > 0.2 and radius >= 8:
+		sb.shadow_color = Color(0.025, 0.035, 0.025, 0.32)
+		sb.shadow_size = 5
+		sb.shadow_offset = Vector2(0, 2)
 	return sb
 
 
@@ -150,36 +157,36 @@ func _build_theme() -> void:
 	theme.default_font = font_body
 	theme.default_font_size = 16
 
-	theme.set_stylebox("panel", "Panel", _sb(Color(0.08, 0.13, 0.10, 0.86), 14, 1, Color(0.55, 0.75, 0.5, 0.25)))
-	theme.set_stylebox("panel", "PanelContainer", _sb(Color(0.09, 0.14, 0.11, 0.92), 16, 1, Color(0.6, 0.8, 0.55, 0.22)))
+	theme.set_stylebox("panel", "Panel", _sb(Color(0.055, 0.095, 0.073, 0.91), 16, 1, Color(0.72, 0.59, 0.34, 0.38)))
+	theme.set_stylebox("panel", "PanelContainer", _sb(Color(0.06, 0.105, 0.08, 0.94), 18, 1, Color(0.76, 0.63, 0.37, 0.34)))
 
-	var b_normal := _sb(Color("#2f5a3c"), 10, 1, Color("#6f9a5f"))
-	var b_hover := _sb(Color("#3c6f4a"), 10, 1, Color("#9dc47f"))
-	var b_press := _sb(Color("#24462f"), 10, 2, Color("#c8e0a0"))
-	var b_disabled := _sb(Color("#2a3029"), 10, 1, Color("#3f4a3d"))
-	var b_focus := _sb(Color(0, 0, 0, 0), 10, 2, Color("#f2c14e"))
+	var b_normal := _sb(Color("#294634"), 12, 1, Color("#9a8353"))
+	var b_hover := _sb(Color("#385b42"), 12, 1, Color("#d8b668"))
+	var b_press := _sb(Color("#20382a"), 12, 2, Color("#eed08a"))
+	var b_disabled := _sb(Color("#252c25"), 12, 1, Color("#485244"))
+	var b_focus := _sb(Color(0, 0, 0, 0), 12, 2, Color("#e4c173"))
 	for t in ["Button", "OptionButton"]:
 		theme.set_stylebox("normal", t, b_normal)
 		theme.set_stylebox("hover", t, b_hover)
 		theme.set_stylebox("pressed", t, b_press)
 		theme.set_stylebox("disabled", t, b_disabled)
 		theme.set_stylebox("focus", t, b_focus)
-		theme.set_color("font_color", t, Color("#f3ecd9"))
-		theme.set_color("font_hover_color", t, Color("#ffffff"))
-		theme.set_color("font_pressed_color", t, Color("#ffe9a8"))
+		theme.set_color("font_color", t, Color("#f4eddc"))
+		theme.set_color("font_hover_color", t, Color("#fff9ea"))
+		theme.set_color("font_pressed_color", t, Color("#ffe5a6"))
 		theme.set_color("font_disabled_color", t, Color("#8b9384"))
 		theme.set_font_size("font_size", t, 18)
 
-	theme.set_color("font_color", "Label", Color("#f3ecd9"))
-	theme.set_color("font_shadow_color", "Label", Color(0, 0, 0, 0.45))
+	theme.set_color("font_color", "Label", Color("#f2ebda"))
+	theme.set_color("font_shadow_color", "Label", Color(0.02, 0.03, 0.02, 0.5))
 	theme.set_constant("shadow_offset_x", "Label", 0)
 	theme.set_constant("shadow_offset_y", "Label", 2)
 
-	theme.set_stylebox("background", "ProgressBar", _sb(Color(0.05, 0.09, 0.07, 0.85), 8))
-	theme.set_stylebox("fill", "ProgressBar", _sb(Color("#7cbb5c"), 8))
+	theme.set_stylebox("background", "ProgressBar", _sb(Color(0.035, 0.065, 0.05, 0.88), 8))
+	theme.set_stylebox("fill", "ProgressBar", _sb(Color("#6e9a53"), 8))
 	theme.set_font_size("font_size", "ProgressBar", 14)
 
-	theme.set_color("font_color", "RichTextLabel", Color("#f3ecd9"))
+	theme.set_color("font_color", "RichTextLabel", Color("#f2ebda"))
 	theme.set_stylebox("normal", "RichTextLabel", _sb(Color(0, 0, 0, 0), 0))
 
 	var ck_empty := _sb(Color(0, 0, 0, 0), 6)
@@ -190,11 +197,11 @@ func _build_theme() -> void:
 	theme.set_stylebox("disabled", "CheckBox", ck_empty)
 	theme.set_font_size("font_size", "CheckBox", 16)
 	theme.set_color("font_color", "CheckBox", Color("#e8e0cc"))
-	theme.set_color("font_hover_color", "CheckBox", Color("#ffffff"))
+	theme.set_color("font_hover_color", "CheckBox", Color("#fff7e4"))
 
-	theme.set_stylebox("slider", "HSlider", _sb(Color(0.1, 0.16, 0.12, 0.9), 4))
-	theme.set_stylebox("grabber_area", "HSlider", _sb(Color("#7cbb5c"), 4))
-	theme.set_stylebox("grabber_area_highlight", "HSlider", _sb(Color("#a4dc7e"), 4))
+	theme.set_stylebox("slider", "HSlider", _sb(Color(0.075, 0.12, 0.085, 0.94), 4))
+	theme.set_stylebox("grabber_area", "HSlider", _sb(Color("#6e9a53"), 4))
+	theme.set_stylebox("grabber_area_highlight", "HSlider", _sb(Color("#9cc478"), 4))
 
 
 func title(text: String, size := 34, color := C["cream"]) -> Label:
@@ -390,6 +397,19 @@ func record_endless(waves: int) -> bool:
 		save["endless_best"] = waves
 	persist()
 	return beat
+
+
+## 钱袋余额：跨对局累计。
+func wallet() -> int:
+	return int(save.get("coins", 0))
+
+
+## 对局结束时把捡到的金币存进钱袋。用途待定（商店/解锁在计划里）。
+func add_coins(n: int) -> void:
+	if n <= 0:
+		return
+	save["coins"] = wallet() + n
+	persist()
 
 
 func picks_for(id: String) -> Array:

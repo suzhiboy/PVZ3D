@@ -4,6 +4,7 @@ extends CharacterBody3D
 ## First-person gardener: walk, sprint (stamina), jump, wade, and swing a trowel.
 
 signal footstep(surface: String)
+signal water_feedback(pos: Vector3, strength: float, moving: bool)
 signal sprint_changed(ratio: float)
 
 const WALK := 2.85
@@ -40,6 +41,8 @@ var _view: Node3D
 var _view_home := Vector3(0.33, -0.33, -0.50)
 var _tween: Tween
 var _climb_tween: Tween
+var _water_step := 0.0
+var _last_wet_pos := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -110,6 +113,9 @@ func spawn(pos: Vector3, new_yaw: float) -> void:
 	yaw = new_yaw
 	pitch = 0.0
 	velocity = Vector3.ZERO
+	in_water = false
+	_water_step = 0.0
+	_last_wet_pos = pos
 	rotation = Vector3(0, yaw, 0)
 	camera.rotation = Vector3.ZERO
 	active = true
@@ -182,7 +188,19 @@ func _physics_process(delta: float) -> void:
 		_shake_t += delta * 20.0
 		return
 
+	var was_in_water := in_water
+	var impact_speed := maxf(0.0, -velocity.y)
 	in_water = water_rect.has_point(Vector2(global_position.x, global_position.z)) and global_position.y < 0.5
+	if in_water:
+		_last_wet_pos = global_position
+		if not was_in_water:
+			var impact := clampf(0.7 + impact_speed * 0.12, 0.7, 1.6)
+			water_feedback.emit(global_position, impact, false)
+			_land_dip = -0.055 * impact
+			_water_step = 0.18
+	elif was_in_water:
+		water_feedback.emit(_last_wet_pos, 0.55, false)
+		_water_step = 0.0
 
 	# movement is gated by `active` + the paused tree, not by mouse capture
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -208,6 +226,10 @@ func _physics_process(delta: float) -> void:
 		target_speed *= 0.62
 	var target := dir * target_speed
 	var accel := ACCEL if is_on_floor() else AIR_ACCEL
+	if in_water:
+		# Water drag makes the gardener feel slower to start and stop; the
+		# movement stays responsive instead of turning into a boat.
+		accel *= 0.58
 	velocity.x = move_toward(velocity.x, target.x, accel * delta)
 	velocity.z = move_toward(velocity.z, target.z, accel * delta)
 
@@ -215,11 +237,18 @@ func _physics_process(delta: float) -> void:
 		velocity.y = JUMP * (0.78 if in_water else 1.0)
 
 	if not is_on_floor():
-		velocity.y -= GRAVITY * delta
+		velocity.y -= GRAVITY * delta * (0.7 if in_water else 1.0)
 	elif velocity.y < 0.0:
 		velocity.y = -0.5
 
 	move_and_slide()
+	if in_water:
+		var wading := Vector2(velocity.x, velocity.z).length()
+		if wading > 0.35 and is_on_floor():
+			_water_step -= delta * (1.4 if sprinting else 1.0)
+			if _water_step <= 0.0:
+				_water_step = 0.34 if sprinting else 0.46
+				water_feedback.emit(global_position, 0.42 if sprinting else 0.3, true)
 
 	# --- camera feel -------------------------------------------------------
 	var horizontal := Vector2(velocity.x, velocity.z).length()
