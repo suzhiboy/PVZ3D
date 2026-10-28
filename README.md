@@ -54,6 +54,8 @@ npm run dev          # http://127.0.0.1:5173
 
 三关依次串联（`?level=` 记录进度）。开局面板里有**关卡选择**，前院两关和后院泳池关可以随时切换；已通关的关卡会打上 ✓，进度存在 `localStorage` 的 `pvz3d.progress` 里。暂停面板的「选关」也能回到这个菜单。
 
+选好关卡后进入**选种子**（和原版一样的带卡环节）：从植物图鉴里挑最多 6 张（泳池关 7 张，多出来的一张永远是睡莲位），按点选顺序排到种子栏的 1–7 号位，再按「开战」进场。列表来自 `src/game/types.ts` 的 `SEED_POOL` / `seedPoolFor(yard)` / `seedCapFor(yard)`，`?seeds=sunflower,peashooter,...` 可以直接复现一套手牌。
+
 1. **前院 · 清晨** — 教学关，只有普通／路障僵尸。
 2. **前院 · 午后** — 铁桶僵尸 + 双发豌豆、寒冰射手、樱桃炸弹。
 3. **后院 · 泳池** — 中间两行是水，**必须先种睡莲**才能在那一行放别的植物；三线射手、大嘴花在这里解锁。
@@ -104,6 +106,13 @@ tools/shots.mjs        无头 Edge 批量截图工具
 
 渲染：Three.js（`r186`），PCF 软阴影、`NeutralToneMapping`、程序化天空与雾。所有几何体都是运行时拼的，没有 glTF。
 
+着色器一共四层：
+
+- **卡通分段**（`materials.ts` 的 `toon()`）：4 段 `DataTexture` 渐变图，角色和植物是 `MeshToonMaterial`。
+- **描边**（`applyInk()`）：反向外壳，按包围球半径撑开 1.2–2.6 cm，小到瞳孔的零件用 `userData.noInk` 跳过。
+- **风摆**（`windify()` / `windToon()`）：顶点位移 = 局部高度平方 × 正弦，相位混入局部 x/z，所以树冠会飘、树干不动、相邻灌木不同步；所有植被共用一个时钟（`tickWind`），每帧只写一次 uniform。
+- **屏幕调色**（`src/render/grade.ts`）：渲染到 `HalfFloatType` 目标，再做一次全屏 pass（饱和度/对比/暖冷分离/暗角），末尾手动补 `pow(c, 1/2.2)`——`ShaderMaterial` 不会自动做 sRGB 编码。
+
 ## 调试与自动化
 
 URL 参数（都用得上）：
@@ -115,7 +124,9 @@ URL 参数（都用得上）：
 ?shot=0                截图模式：去掉开场面板、冻结模拟、画面上叠加 #shotinfo 诊断
 ?warp=秒数             预演 N 秒模拟（例如 warp=120 直接看第四波）
 ?plant=c:r:kind,...    预铺植物，如 plant=0:0:sunflower,2:2:lilypad,2:2:peashooter
+?seeds=a,b,c           指定手牌（跳过选种子，直接带这几张进场）
 ?panel=intro           截图模式下也显示开局面板（用来拍关卡选择菜单）
+?panel=seeds           截图模式下直接显示选种子面板
 ?debug=1               调试浮层（fps / 坐标 / 僵尸数）
 ```
 
@@ -136,7 +147,7 @@ node tools/shots.mjs --dom 16-win
 
 ## 截图（里程碑验收）
 
-`npm run shots` 会把 21 张图渲染到 `.shots/`（960×540，无头 Edge + SwiftShader，每张 8–190 秒）。
+`npm run shots` 会把 25 张图渲染到 `.shots/`（960×540，无头 Edge + SwiftShader，每张 3–300 秒）。
 
 | 里程碑 | 镜头 |
 | --- | --- |
@@ -144,11 +155,13 @@ node tools/shots.mjs --dom 16-win
 | M1 室内 | `08-living` `09-kitchen` `10-upstairs` |
 | M2 前院 | `11-front-play` `12-front-close` `14-plant-close` `15-zombie-close` `16-win` `18-front2-win` |
 | M3 后院 | `13-back-play` `17-back-win` `19-pool-water` |
-| M3/M4 菜单 | `20-menu` `21-menu-backyard` |
+| M3/M4 菜单 | `20-menu` `21-menu-backyard` `24-seed-chooser` |
+| 美术近景 | `22-plant-front` `23-zombie-front` |
+| 选卡 | `24-seed-chooser` `25-custom-hand` |
 
 ![前院·午后通关](.shots/18-front2-win.png)
 ![后院泳池](.shots/17-back-win.png)
-![关卡选择](.shots/20-menu.png)
+![选种子](.shots/24-seed-chooser.png)
 
 ## 测试
 
@@ -156,7 +169,7 @@ node tools/shots.mjs --dom 16-win
 npm test
 ```
 
-覆盖：碰撞世界（台阶高度、斜坡插值、墙体竖直判定、滑墙不穿模、水面）、草坪坐标（行列与格心互逆、僵尸行进方向、小推车位置、泳池范围）、关卡数据（波次顺序、种子合法性、行号越界、泳池关必须卖睡莲）、粒子特效（生成/上升/过期回收/并发上限）。
+覆盖：碰撞世界（台阶高度、斜坡插值、墙体竖直判定、滑墙不穿模、水面）、草坪坐标（行列与格心互逆、僵尸行进方向、小推车位置、泳池范围）、关卡数据（波次顺序、种子合法性、行号越界、泳池关必须卖睡莲、选种子的池子能凑满且不重复、泳池关多一张卡）、粒子特效（生成/上升/过期回收/并发上限）。
 
 ## 已知取舍
 
@@ -164,3 +177,4 @@ npm test
 - 美术是几何体 + Canvas 贴图的卡通风，不是手绘贴图；想要更接近原版需要外部素材。
 - 僵尸寻路是沿单行直线推进，没有绕路或翻越。
 - 水面只有顶点着色器波动 + 高光，没有反射/折射。
+- 没有做开花/爆炸的屏幕泛光（bloom）：那需要额外的降采样+模糊 pass，在软件渲染下成本太高，目前用加性精灵光晕代替。

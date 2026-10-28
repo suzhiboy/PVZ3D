@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import type { Collision } from '../core/collision.ts';
 import { mulberry32 } from '../core/mathx.ts';
-import { PALETTE, getAssets, solid, textured, toon, uvScale } from '../core/materials.ts';
+import { PALETTE, getAssets, solid, textured, uvScale, windToon } from '../core/materials.ts';
 import { boxAt, cylinderAt, sphereAt } from './parts.ts';
 import { HOUSE, POOL, STREET } from './layout.ts';
 
@@ -30,7 +30,9 @@ function clump(
   rng: () => number,
   squash = 0.84,
 ): THREE.Mesh {
-  const m = new THREE.Mesh(CLUMP_GEO, toon(tone));
+  // amplitude is in local units: the clump is scaled by `r`, so a canopy a few
+  // metres across drifts visibly while a small bush only shivers
+  const m = new THREE.Mesh(CLUMP_GEO, windToon(tone, { amplitude: 0.15, height: 1, freq: 0.72 }));
   m.position.set(x, y, z);
   m.rotation.set(rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2);
   m.scale.set(r, r * squash, r * (0.9 + rng() * 0.2));

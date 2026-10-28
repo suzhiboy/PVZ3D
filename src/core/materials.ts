@@ -12,6 +12,7 @@ import {
   copingTexture,
   glowTexture,
   grassTileTexture,
+  haloTexture,
   hedgeTexture,
   poolFloorTexture,
   roadStripeTexture,
@@ -122,6 +123,89 @@ export function toon(color: number): THREE.MeshToonMaterial {
   return mat;
 }
 
+/**
+ * Every `windify`-patched material shares this clock, so one write per frame
+ * animates the whole yard.
+ */
+const windClock = { value: 0 };
+
+/** Advance the foliage sway animation (seconds since start). */
+export function tickWind(seconds: number): void {
+  windClock.value = seconds;
+}
+
+export interface WindOpts {
+  /** Horizontal travel in metres at the top of the mesh. */
+  amplitude?: number;
+  /** Local Y that counts as "fully exposed to the wind". */
+  height?: number;
+  /** Sway speed (radians per second). */
+  freq?: number;
+}
+
+/**
+ * A vertex-shader wind pass for foliage.
+ *
+ * The displacement is squared by the vertex's local height, so a trunk stays
+ * planted while the crown drifts, and the phase mixes in the local position so
+ * neighbouring bushes do not breathe in lockstep. Cheap enough to run on every
+ * tree in the yard: no extra draw calls, no extra passes.
+ */
+export function windify<M extends THREE.Material>(material: M, opts: WindOpts = {}): M {
+  const amplitude = opts.amplitude ?? 0.06;
+  const height = opts.height ?? 1;
+  const freq = opts.freq ?? 0.85;
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uWindTime = windClock;
+    shader.uniforms.uWindAmp = { value: amplitude };
+    shader.uniforms.uWindHeight = { value: height };
+    shader.uniforms.uWindFreq = { value: freq };
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        uniform float uWindTime;
+        uniform float uWindAmp;
+        uniform float uWindHeight;
+        uniform float uWindFreq;`,
+      )
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        {
+          float windH = clamp(transformed.y / uWindHeight, 0.0, 1.0);
+          windH *= windH;
+          float windPhase = uWindTime * uWindFreq + position.x * 0.9 + position.z * 1.3;
+          transformed.x += sin(windPhase) * windH * uWindAmp;
+          transformed.z += cos(windPhase * 0.82 + 1.7) * windH * uWindAmp * 0.65;
+        }`,
+      );
+  };
+  material.customProgramCacheKey = () => `wind|${amplitude}|${height}|${freq}`;
+  material.needsUpdate = true;
+  return material;
+}
+
+const windToonCache = new Map<string, THREE.MeshToonMaterial>();
+
+/**
+ * Cel-shaded clone of `toon()` that sways in the wind. Cloned on purpose: the
+ * cached `toon()` material is shared with plants and zombies, which must not
+ * drift.
+ */
+export function windToon(color: number, opts: WindOpts = {}): THREE.MeshToonMaterial {
+  const amplitude = opts.amplitude ?? 0.06;
+  const height = opts.height ?? 1;
+  const freq = opts.freq ?? 0.85;
+  const cacheKey = `${color}|${amplitude}|${height}|${freq}`;
+  const hit = windToonCache.get(cacheKey);
+  if (hit) return hit;
+  const mat = new THREE.MeshToonMaterial({ color, gradientMap: toonRamp() });
+  windify(mat, opts);
+  windToonCache.set(cacheKey, mat);
+  return mat;
+}
+
 const inkCache = new Map<number, THREE.MeshBasicMaterial>();
 
 function inkMaterial(color: number): THREE.MeshBasicMaterial {
@@ -199,6 +283,7 @@ export interface WorldAssets {
   wallpaper: THREE.Texture;
   carpet: THREE.Texture;
   glow: THREE.Texture;
+  halo: THREE.Texture;
   highlight: THREE.Texture;
   waterNoise: THREE.Texture;
 }
@@ -229,6 +314,7 @@ export function getAssets(): WorldAssets {
     wallpaper: fix(wallTexture()),
     carpet: fix(carpetTexture()),
     glow: glowTexture(),
+    halo: haloTexture(),
     highlight: tileHighlightTexture(),
     waterNoise: waterNoiseTexture(),
   };

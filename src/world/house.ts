@@ -133,6 +133,11 @@ export function buildHouse(scene: THREE.Scene, col: Collision): HouseResult {
         frameBox(a0, a1, op.b0 - 0.09, op.b0);
         frameBox(a0, a1, op.b1, op.b1 + 0.09);
         frameBox(a0, a1, (op.b0 + op.b1) / 2 - 0.035, (op.b0 + op.b1) / 2 + 0.035);
+        // vertical muntin: with the check rail this splits the sash into the
+        // classic 2-over-2 panes and stops the glass reading as a black hole
+        const muntinX = (a0 + a1) / 2;
+        frameBox(muntinX - 0.028, muntinX + 0.028, op.b0, (op.b0 + op.b1) / 2);
+        frameBox(muntinX - 0.028, muntinX + 0.028, (op.b0 + op.b1) / 2, op.b1);
         // sill
         frameBox(a0 - 0.12, a1 + 0.12, op.b0 - 0.12, op.b0 - 0.02);
       } else {
@@ -277,6 +282,20 @@ export function buildHouse(scene: THREE.Scene, col: Collision): HouseResult {
   };
   roofPiece(1);
   roofPiece(-1);
+  // gutters: a half-round run hanging off each eave plus downspouts at the
+  // corners — cheap detail that reads as "someone built this house"
+  const gutterMat = solid(PALETTE.metal, { standard: true, roughness: 0.45, metalness: 0.5 });
+  for (const dir of [1, -1] as const) {
+    const ex = dir === 1 ? HOUSE.x1 + ovh - 0.1 : HOUSE.x0 - ovh + 0.1;
+    const run = boxAt(0.15, 0.13, hz1 - hz0, gutterMat, ex, eaveY - 0.34, roofMidZ);
+    run.castShadow = false;
+    scene.add(run);
+    for (const dz of [hz0 + 0.35, hz1 - 0.35]) {
+      const spout = cylinderAt(0.055, 0.055, eaveY - 0.34, gutterMat, ex, 0, dz, 8);
+      spout.castShadow = false;
+      scene.add(spout);
+    }
+  }
   // ridge cap
   const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.24, hz1 - hz0), solid(PALETTE.roof, { standard: true, roughness: 0.7 }));
   ridge.position.set(cx, eaveY + rise + 0.05, roofMidZ);

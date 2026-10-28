@@ -1,6 +1,7 @@
 /** Builds the playable scene graph and the collision world that mirrors it. */
 import * as THREE from 'three';
 import { Collision } from '../core/collision.ts';
+import { tickWind } from '../core/materials.ts';
 import { createEnvironment } from './environment.ts';
 import type { Environment } from './environment.ts';
 import { buildHouse } from './house.ts';
@@ -29,6 +30,7 @@ export function buildWorld(): World {
   const terrain = buildTerrain(scene, collision);
   const house = buildHouse(scene, collision);
   buildScenery(scene, collision);
+  let clock = 0;
 
   return {
     scene,
@@ -38,6 +40,8 @@ export function buildWorld(): World {
     environment: env,
     house,
     update(dt: number): void {
+      clock += dt;
+      tickWind(clock);
       env.update(dt);
       terrain.update(dt);
       house.update(dt);

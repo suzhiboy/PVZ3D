@@ -639,6 +639,24 @@ export function glowTexture(): THREE.CanvasTexture {
   return t;
 }
 
+/** Pure-white radial falloff: an additive sprite whose colour tints it. */
+export function haloTexture(): THREE.CanvasTexture {
+  const cv = paint(128, 128, (p) => {
+    const { c, w, h } = p;
+    const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    g.addColorStop(0, 'rgba(255,255,255,0.95)');
+    g.addColorStop(0.28, 'rgba(255,255,255,0.5)');
+    g.addColorStop(0.62, 'rgba(255,255,255,0.14)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, w, h);
+  });
+  const t = tex(cv);
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
 /** Hovered-tile marker: bright rounded frame with a soft inner wash. */
 export function tileHighlightTexture(): THREE.CanvasTexture {
   const cv = paint(128, 128, (p) => {
