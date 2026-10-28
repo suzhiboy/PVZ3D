@@ -6,7 +6,7 @@ import { DebugOverlay, exposeAutomation, flags, markReady } from './core/debug.t
 import { Input } from './core/input.ts';
 import { Loop } from './core/loop.ts';
 import { Game } from './game/game.ts';
-import { LEVELS, type PlantKind } from './game/types.ts';
+import { LEVELS, seedCapFor, seedPoolFor, type PlantKind } from './game/types.ts';
 import { Player } from './player/player.ts';
 import { Grade } from './render/grade.ts';
 import { Hud, type PanelInfo, type PanelKind } from './ui/hud.ts';
@@ -96,7 +96,30 @@ if (shotMode) {
   hudRoot.appendChild(shotInfo);
 }
 const game = new Game(world, player, camera, LEVELS[levelIndex], shotMode);
-hud.buildSeeds(LEVELS[levelIndex].seeds);
+
+/** Plants the player may bring into this yard (see `seedPoolFor`). */
+function seedPool(): PlantKind[] {
+  return seedPoolFor(LEVELS[levelIndex].yard);
+}
+function seedCap(): number {
+  return seedCapFor(LEVELS[levelIndex].yard);
+}
+
+/** `?seeds=a,b,c` — replay a hand, and lets the harness capture one. */
+function readSeedsParam(): PlantKind[] | null {
+  const raw = params.get('seeds');
+  if (!raw) return null;
+  const pool = seedPool();
+  const picked = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s): s is PlantKind => pool.includes(s as PlantKind));
+  return picked.length ? [...new Set(picked)].slice(0, seedCap()) : null;
+}
+
+let activeSeeds: PlantKind[] = readSeedsParam() ?? LEVELS[levelIndex].seeds.slice();
+game.applySeeds(activeSeeds);
+hud.buildSeeds(activeSeeds);
 
 let started = shotMode;
 let lastState = game.state;
@@ -166,8 +189,36 @@ function goToLevel(index: number): void {
   p.delete('shot');
   p.delete('warp');
   p.delete('plant');
+  p.delete('seeds');
+  p.delete('panel');
   location.search = p.toString();
 }
+
+/** Pre-battle hand: pick the packets before the zombies show up. */
+function openSeedChooser(): void {
+  const lv = LEVELS[levelIndex];
+  hud.showPanel('intro', {
+    title: '选择种子',
+    body:
+      `${lv.name}：最多带 ${seedCap()} 张种子进场。\n` +
+      '阳光有限，先想好开局顺序——数字键 1-7 对应卡槽，F 或左键种下。',
+    button: '开战',
+    secondary: '返回选关',
+  });
+  hud.showSeedChooser(seedPool(), activeSeeds, seedCap());
+}
+
+function beginBattle(picked: PlantKind[]): void {
+  activeSeeds = picked.slice();
+  game.applySeeds(activeSeeds);
+  hud.buildSeeds(activeSeeds);
+  started = true;
+  hud.showPanel(null);
+  audio.unlock();
+  input.requestLock();
+}
+
+hud.onSeedsConfirm = (picked) => beginBattle(picked);
 
 hud.onSelect = (kind) => {
   if (!started || game.state !== 'playing') return;
@@ -177,10 +228,8 @@ hud.onSelect = (kind) => {
 
 hud.onPrimary = () => {
   if (!started) {
-    started = true;
-    hud.showPanel(null);
-    audio.unlock();
-    input.requestLock();
+    // intro -> seed chooser; the chooser's own primary button starts the fight
+    openSeedChooser();
     return;
   }
   if (game.state === 'won') {
@@ -195,7 +244,8 @@ hud.onPrimary = () => {
 };
 
 hud.onSecondary = () => {
-  if (game.state === 'won') goToLevel(levelIndex);
+  if (hud.choosingSeeds) showIntro();
+  else if (game.state === 'won') goToLevel(levelIndex);
   else if (hud.visiblePanel === 'paused') pickLevel(game.level.id);
 };
 
@@ -229,6 +279,9 @@ if (!shotMode) {
 } else if (params.get('panel') === 'intro') {
   // lets the screenshot harness capture the menu itself
   showIntro();
+} else if (params.get('panel') === 'seeds') {
+  showIntro();
+  openSeedChooser();
 }
 
 // Screenshot tooling: pre-simulate `warp` seconds and pre-place plants.
@@ -294,15 +347,14 @@ const overlay = new DebugOverlay(() => {
 
 function handleKeys(): void {
   if (!started) {
-    if (input.wasPressed('Enter') || input.wasPressed('Space')) hud.onPrimary?.();
+    if (input.wasPressed('Enter') || input.wasPressed('Space')) hud.pressPrimary();
     return;
   }
   const playing = game.state === 'playing';
   if (playing) {
-    const seeds = LEVELS[levelIndex].seeds;
-    for (let i = 0; i < seeds.length; i++) {
+    for (let i = 0; i < activeSeeds.length; i++) {
       if (input.wasPressed(`Digit${i + 1}`)) {
-        const kind = seeds[i];
+        const kind = activeSeeds[i];
         game.selectSeed(game.selected === kind ? null : kind);
         audio.play('select', 0.5);
       }
@@ -310,10 +362,9 @@ function handleKeys(): void {
     if (input.wasPressed('KeyE')) game.interact();
     if (input.wasPressed('KeyQ')) game.digHere();
     if (input.wasPressed('KeyF') || (input.locked && input.wasPressed('Mouse0'))) game.plantHere();
-    if (input.wheel !== 0) {
-      const seeds2 = LEVELS[levelIndex].seeds;
-      const i = game.selected ? seeds2.indexOf(game.selected) : -1;
-      const next = seeds2[(i + (input.wheel > 0 ? 1 : seeds2.length - 1)) % seeds2.length];
+    if (input.wheel !== 0 && activeSeeds.length > 0) {
+      const i = game.selected ? activeSeeds.indexOf(game.selected) : -1;
+      const next = activeSeeds[(i + (input.wheel > 0 ? 1 : activeSeeds.length - 1)) % activeSeeds.length];
       game.selectSeed(next);
     }
   }

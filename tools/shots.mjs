@@ -168,6 +168,26 @@ const SHOTS = [
     warp: 56,
     plant: '2:0:peashooter,2:1:peashooter,3:0:sunflower,3:1:sunflower,1:2:wallnut,2:2:wallnut',
   },
+  {
+    // pre-battle hand: the seed chooser over the live yard
+    name: '24-seed-chooser',
+    at: '-3.0,0.6',
+    yaw: 92,
+    pitch: -6,
+    level: 'front-1',
+    panel: 'seeds',
+  },
+  {
+    // a hand picked in the chooser, carried into the yard (`?seeds=`)
+    name: '25-custom-hand',
+    at: '-5.6,0.2',
+    yaw: -92,
+    pitch: -6,
+    level: 'front-2',
+    warp: 60,
+    seeds: 'sunflower,repeater,snowpea,wallnut,cherrybomb,tallnut',
+    plant: '0:0:sunflower,1:1:sunflower,2:0:repeater,2:1:snowpea,3:2:tallnut,1:3:wallnut',
+  },
 ];
 
 const args = process.argv.slice(2);
@@ -199,6 +219,7 @@ function urlFor(shot) {
   if (shot.level) q.set('level', shot.level);
   if (shot.warp !== undefined) q.set('warp', String(shot.warp));
   if (shot.plant) q.set('plant', shot.plant);
+  if (shot.seeds) q.set('seeds', shot.seeds);
   if (shot.panel) q.set('panel', shot.panel);
   q.set('shot', String(shot.frames ?? 0));
   return `http://127.0.0.1:${PORT}/?${q.toString()}`;
@@ -301,12 +322,14 @@ try {
         [
           `--screenshot=${png}`,
           '--window-size=960,540',
-          '--virtual-time-budget=400',
+          // ~13 virtual frames is enough for the first composite; a larger
+          // budget only multiplies SwiftShader's per-frame cost into minutes
+          '--virtual-time-budget=220',
           '--run-all-compositor-stages-before-draw',
           '--disable-new-content-rendering-timeout',
           urlFor(shot),
         ],
-        260000,
+        320000,
         shot.name,
       );
       const size = await fileSize(png);

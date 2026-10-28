@@ -2,6 +2,7 @@
  * DOM HUD: sun bank, wave progress, the seed bar, crosshair and the
  * intro / win / lose panels. Styles live in `style.css`.
  */
+import { audio } from '../core/audio.ts';
 import { PLANT_DEFS, type PlantKind } from '../game/types.ts';
 import type { HudData } from '../game/game.ts';
 
@@ -26,6 +27,8 @@ export class Hud {
   onSelect: ((kind: PlantKind | null) => void) | null = null;
   onPrimary: (() => void) | null = null;
   onSecondary: (() => void) | null = null;
+  /** Fires when the player confirms a hand of seeds in the chooser. */
+  onSeedsConfirm: ((picked: PlantKind[]) => void) | null = null;
 
   private readonly sunValue: HTMLElement;
   private readonly levelName: HTMLElement;
@@ -37,6 +40,7 @@ export class Hud {
   private readonly panelTitle: HTMLElement;
   private readonly panelBody: HTMLElement;
   private readonly levelList: HTMLElement;
+  private readonly seedPool: HTMLElement;
   private readonly primaryBtn: HTMLButtonElement;
   private readonly secondaryBtn: HTMLButtonElement;
   private readonly crosshair: HTMLElement;
@@ -48,6 +52,10 @@ export class Hud {
   private lastWave = '';
   private lastProgress = -1;
   private panelKind: PanelKind = null;
+  /** seed chooser state: open flag, the hand being built, and the cap */
+  private pickerOpen = false;
+  private picked: PlantKind[] = [];
+  private pickCap = 6;
 
   constructor(root: HTMLElement) {
     root.insertAdjacentHTML(
@@ -67,6 +75,7 @@ export class Hud {
          <h1 id="panel-title"></h1>
          <p id="panel-body"></p>
          <div class="level-list hidden" id="level-list"></div>
+         <div class="seed-pool hidden" id="seed-pool"></div>
          <div class="panel-buttons">
            <button id="panel-primary"></button>
            <button id="panel-secondary" class="ghost"></button>
@@ -84,6 +93,7 @@ export class Hud {
     this.panelTitle = root.querySelector('#panel-title') as HTMLElement;
     this.panelBody = root.querySelector('#panel-body') as HTMLElement;
     this.levelList = root.querySelector('#level-list') as HTMLElement;
+    this.seedPool = root.querySelector('#seed-pool') as HTMLElement;
     this.primaryBtn = root.querySelector('#panel-primary') as HTMLButtonElement;
     this.secondaryBtn = root.querySelector('#panel-secondary') as HTMLButtonElement;
     this.crosshair = root.querySelector('#crosshair') as HTMLElement;
@@ -95,7 +105,7 @@ export class Hud {
       if (!kind) return;
       this.onSelect?.(kind);
     });
-    this.primaryBtn.addEventListener('click', () => this.onPrimary?.());
+    this.primaryBtn.addEventListener('click', () => this.pressPrimary());
     this.secondaryBtn.addEventListener('click', () => this.onSecondary?.());
   }
 
@@ -162,8 +172,11 @@ export class Hud {
 
   showPanel(kind: PanelKind, info?: PanelInfo): void {
     this.panelKind = kind;
+    this.pickerOpen = false;
     this.levelList.innerHTML = '';
     this.levelList.classList.add('hidden');
+    this.seedPool.innerHTML = '';
+    this.seedPool.classList.add('hidden');
     if (!kind || !info) {
       this.panel.classList.add('hidden');
       return;
@@ -173,8 +186,81 @@ export class Hud {
     this.panelTitle.textContent = info.title;
     this.panelBody.textContent = info.body;
     this.primaryBtn.textContent = info.button;
+    this.primaryBtn.disabled = false;
     this.secondaryBtn.textContent = info.secondary ?? '';
     this.secondaryBtn.style.display = info.secondary ? '' : 'none';
+  }
+
+  /**
+   * The pre-battle hand: pick up to `max` plants out of the yard's full pool,
+   * the way the original seed chooser works. Picking order becomes the slot
+   * order on the seed bar.
+   */
+  showSeedChooser(pool: PlantKind[], chosen: PlantKind[], max: number): void {
+    this.pickerOpen = true;
+    this.pickCap = max;
+    this.picked = chosen.filter((k) => pool.includes(k)).slice(0, max);
+    this.seedPool.innerHTML = '';
+    this.seedPool.classList.remove('hidden');
+
+    const count = document.createElement('div');
+    count.className = 'pick-count';
+    this.seedPool.appendChild(count);
+
+    const grid = document.createElement('div');
+    grid.className = 'pick-grid';
+    this.seedPool.appendChild(grid);
+
+    const chips = new Map<PlantKind, HTMLElement>();
+    const paint = (): void => {
+      count.textContent = `已带 ${this.picked.length} / ${max} 张 · 点一下加入，再点取消`;
+      for (const [kind, el] of chips) {
+        const i = this.picked.indexOf(kind);
+        el.classList.toggle('picked', i >= 0);
+        const order = el.querySelector('.pick-order') as HTMLElement;
+        order.textContent = i >= 0 ? String(i + 1) : '';
+      }
+      this.primaryBtn.disabled = this.picked.length === 0;
+    };
+
+    for (const kind of pool) {
+      const def = PLANT_DEFS[kind];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'seed-pick';
+      btn.dataset.kind = kind;
+      btn.innerHTML =
+        `<span class="pick-order"></span>` +
+        `<span class="pick-icon">${def.icon}</span>` +
+        `<span class="pick-text"><b>${def.name}</b><i>☀ ${def.cost}</i></span>`;
+      btn.addEventListener('click', () => {
+        const at = this.picked.indexOf(kind);
+        if (at >= 0) this.picked.splice(at, 1);
+        else if (this.picked.length < this.pickCap) this.picked.push(kind);
+        else audio.play('deny', 0.4);
+        paint();
+      });
+      chips.set(kind, btn);
+      grid.appendChild(btn);
+    }
+    paint();
+  }
+
+  /** True while the chooser owns the primary button. */
+  get choosingSeeds(): boolean {
+    return this.pickerOpen;
+  }
+
+  /** Keyboard/click equivalent of the primary button. */
+  pressPrimary(): void {
+    if (this.pickerOpen) {
+      const hand = [...this.picked];
+      if (hand.length === 0) return;
+      this.pickerOpen = false;
+      this.onSeedsConfirm?.(hand);
+      return;
+    }
+    this.onPrimary?.();
   }
 
   /** Level chooser rendered inside the panel (front yard / backyard). */

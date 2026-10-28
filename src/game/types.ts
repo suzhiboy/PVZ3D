@@ -250,3 +250,30 @@ export const LEVELS: LevelDef[] = [
 export function levelById(id: string): LevelDef {
   return LEVELS.find((l) => l.id === id) ?? LEVELS[0];
 }
+
+/**
+ * The full almanac of plants a player owns. The pre-battle chooser draws its
+ * cards from here; a level's own `seeds` list is only the suggested hand.
+ */
+export const SEED_POOL: PlantKind[] = [
+  'sunflower',
+  'peashooter',
+  'wallnut',
+  'potatomine',
+  'snowpea',
+  'repeater',
+  'cherrybomb',
+  'chomper',
+  'threepeater',
+  'tallnut',
+];
+
+/** Plants available in a yard: the pool yard also hands out lily pads. */
+export function seedPoolFor(yard: 'front' | 'back'): PlantKind[] {
+  return yard === 'back' ? [...SEED_POOL, 'lilypad'] : [...SEED_POOL];
+}
+
+/** Slots on the seed bar; the pool yard needs one extra for the lily pads. */
+export function seedCapFor(yard: 'front' | 'back'): number {
+  return yard === 'back' ? 7 : 6;
+}

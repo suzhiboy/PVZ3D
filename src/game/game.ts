@@ -12,7 +12,7 @@ import { PLANT_DEFS, ZOMBIE_DEFS, type LevelDef, type PlantDef, type PlantKind, 
 import { buildPlantModel, buildZombieModel, type ZombieModel } from './models.ts';
 import { Fx } from './fx.ts';
 import { audio } from '../core/audio.ts';
-import { getAssets } from '../core/materials.ts';
+import { getAssets, toon } from '../core/materials.ts';
 
 export type GameState = 'playing' | 'won' | 'lost';
 
@@ -118,7 +118,7 @@ function key(c: number, r: number): string {
 }
 
 export class Game {
-  readonly level: LevelDef;
+  level: LevelDef;
   readonly yard: Yard;
   state: GameState = 'playing';
   sun: number;
@@ -274,6 +274,17 @@ export class Game {
     } else {
       this.attachGhost(null);
     }
+  }
+
+  /**
+   * Replace the hand of seeds (what the pre-battle chooser produces). The
+   * wave table stays untouched, only the packets on the bar change.
+   */
+  applySeeds(kinds: PlantKind[]): void {
+    if (kinds.length === 0) return;
+    this.level = { ...this.level, seeds: kinds.slice() };
+    this.cooldown.clear();
+    if (this.selected && !kinds.includes(this.selected)) this.selectSeed(null);
   }
 
   private attachGhost(kind: PlantKind | null): void {
@@ -630,13 +641,21 @@ export class Game {
 
   private firePea(x: number, z: number, r: number, damage: number, freeze: boolean, delay: number): void {
     const geo = new THREE.SphereGeometry(freeze ? 0.11 : 0.1, 10, 8);
-    const mat = new THREE.MeshStandardMaterial({
-      color: freeze ? 0xa8e4f5 : 0x7fd44f,
-      roughness: 0.45,
-      emissive: freeze ? 0x2a6a80 : 0x1d4a12,
-      emissiveIntensity: 0.35,
-    });
-    const mesh = new THREE.Mesh(geo, mat);
+    // cel-shaded pea plus an additive halo, so the shot reads as a glowing
+    // projectile instead of a small lit ball
+    const mesh = new THREE.Mesh(geo, toon(freeze ? 0xbfeefc : 0x8ee05a));
+    const halo = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: getAssets().halo,
+        color: freeze ? 0x9fe6ff : 0xc4ff88,
+        transparent: true,
+        opacity: 0.8,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    halo.scale.setScalar(0.58);
+    mesh.add(halo);
     mesh.position.set(x, 0.86, z);
     this.scene.add(mesh);
     this.peas.push({ x, z, y: 0.86, r, dir: this.attackDir(), damage, freeze, mesh, dead: false });
@@ -670,6 +689,11 @@ export class Game {
     p.dead = true;
     this.scene.remove(p.mesh);
     p.mesh.geometry.dispose();
+    // the halo sprite owns a cloned SpriteMaterial; drop it with the pea
+    for (const child of p.mesh.children) {
+      const sprite = child as THREE.Sprite;
+      if (sprite.isSprite) (sprite.material as THREE.SpriteMaterial).dispose();
+    }
   }
 
   private updateZombies(dt: number): void {

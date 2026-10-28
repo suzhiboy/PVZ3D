@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { LEVELS, PLANT_DEFS, ZOMBIE_DEFS, levelById } from '../src/game/types.ts';
+import { LEVELS, PLANT_DEFS, SEED_POOL, ZOMBIE_DEFS, levelById, seedCapFor, seedPoolFor } from '../src/game/types.ts';
 import { YARDS } from '../src/world/layout.ts';
 
 test('level ids are unique and resolvable', () => {
@@ -73,4 +73,20 @@ test('the pool level is reachable from the front levels', () => {
     LEVELS.map((l) => l.yard),
     ['front', 'front', 'back'],
   );
+});
+
+test('the seed chooser can fill a legal hand for every level', () => {
+  for (const level of LEVELS) {
+    const pool = seedPoolFor(level.yard);
+    // every suggested packet must be drawable from the pool
+    for (const kind of level.seeds) assert.ok(pool.includes(kind), `${level.id} pool has ${kind}`);
+    // and the pool must be able to overflow the bar, otherwise there is no choice
+    assert.ok(pool.length >= seedCapFor(level.yard), `${level.id} pool is big enough`);
+    assert.equal(new Set(pool).size, pool.length, `${level.id} pool has no duplicates`);
+    for (const kind of pool) assert.ok(PLANT_DEFS[kind], `pool knows ${kind}`);
+  }
+  assert.ok(seedCapFor('back') > seedCapFor('front'), 'the pool yard carries one extra packet');
+  assert.ok(seedPoolFor('back').includes('lilypad'));
+  assert.ok(!seedPoolFor('front').includes('lilypad'));
+  assert.equal(SEED_POOL.length, seedPoolFor('front').length);
 });
