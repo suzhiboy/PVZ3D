@@ -8,6 +8,8 @@ signal endless_chosen
 signal continue_pressed
 signal settings_changed
 signal quit_pressed
+signal almanac_pressed
+signal store_pressed
 
 var root: Control
 var cards: Array = []
@@ -20,10 +22,11 @@ var _continue: Button
 var _hero: PlantIcon
 var _endless: EndlessCard
 var _purse: CoinPurse
+var _note: Label
 var _music: HSlider
 
 
-## 标题界面的钱袋读数：跨对局累计的金币余额（用途待定，先把账记上）。
+## 标题界面的钱袋读数：跨对局累计的金币余额，用来在戴夫的商店里买永久升级。
 class CoinPurse extends Control:
 	var shown := 0
 	var _bg: StyleBoxFlat
@@ -44,7 +47,7 @@ class CoinPurse extends Control:
 		draw_circle(c, 9.0, Color("#f6d377"))
 		draw_arc(c, 13.0, -0.6, PI + 0.6, 22, Color(1.0, 0.92, 0.62, 0.65), 1.4, true)
 		draw_string(App.font_bold, Vector2(48, 30), str(shown), HORIZONTAL_ALIGNMENT_LEFT, 130, 21, Color("#ffe6a1"))
-		draw_string(App.font_body, Vector2(170, 30), "钱袋 · 用途待定", HORIZONTAL_ALIGNMENT_LEFT, 104, 11, Color(1, 1, 1, 0.38))
+		draw_string(App.font_body, Vector2(170, 30), "钱袋 · 商店可用", HORIZONTAL_ALIGNMENT_LEFT, 104, 11, Color(1, 1, 1, 0.38))
 
 
 ## The endless run gets its own card: it has no wave count and no stars, so the
@@ -280,6 +283,28 @@ func _ready() -> void:
 	qbtn.pressed.connect(func() -> void: quit_pressed.emit())
 	root.add_child(qbtn)
 
+	var abtn := Button.new()
+	abtn.text = "图鉴"
+	abtn.position = Vector2(600, 706)
+	abtn.size = Vector2(132, 52)
+	abtn.tooltip_text = "查看已经遇见的植物与僵尸"
+	abtn.pressed.connect(func() -> void:
+		App.sfx("click", -4.0)
+		almanac_pressed.emit()
+	)
+	root.add_child(abtn)
+
+	var stbtn := Button.new()
+	stbtn.text = "商店"
+	stbtn.position = Vector2(744, 706)
+	stbtn.size = Vector2(132, 52)
+	stbtn.tooltip_text = "用金币买永久升级"
+	stbtn.pressed.connect(func() -> void:
+		App.sfx("click", -4.0)
+		store_pressed.emit()
+	)
+	root.add_child(stbtn)
+
 	var hint := Label.new()
 	hint.text = "点击关卡 → 挑选出战植物 · 无尽模式没有终点 · WASD 移动 · 左键种植 · 1-9 选卡"
 	hint.position = Vector2(92, 780)
@@ -310,6 +335,7 @@ func _ready() -> void:
 	note.add_theme_font_size_override("font_size", 12)
 	note.add_theme_color_override("font_color", Color(1, 1, 1, 0.35))
 	root.add_child(note)
+	_note = note
 
 	_build_settings()
 
@@ -339,6 +365,11 @@ func refresh() -> void:
 		_purse.queue_redraw()
 	if _hero:
 		_hero.kind = "peashooter"
+	if _note:
+		_note.text = "%d 种植物 · %d 种僵尸 · 图鉴 %d/%d · 钱袋 %d" % [
+			Data.PLANTS.size(), Data.zombie_kinds().size(),
+			App.seen_count(), App.species_total(), App.wallet(),
+		]
 
 
 func show_menu(on: bool) -> void:
@@ -346,6 +377,22 @@ func show_menu(on: bool) -> void:
 	if on:
 		refresh()
 		_settings.visible = false
+
+
+## The menu itself now lives in 3-D (see ui/menu_tomb.gd), but the settings
+## overlay is still a card-stack panel. Hiding every other child keeps the
+## gradient backdrop and the level cards out of the way without tearing down
+## the settings widgets.
+func show_cards(on: bool) -> void:
+	root.visible = true
+	for c in root.get_children():
+		if c == _settings:
+			continue
+		var ci := c as CanvasItem
+		if ci != null:
+			ci.visible = on
+	if on:
+		refresh()
 
 
 func _build_settings() -> void:

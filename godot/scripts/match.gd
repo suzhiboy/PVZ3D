@@ -7,6 +7,7 @@ signal sun_changed(value: int)
 signal wave_banner(text: String, big: bool)
 signal state_changed(state: String)
 signal seed_used(index: int)
+signal spare_dropped(lane: int, left: int)
 
 var level: Dictionary
 var yard: Dictionary
@@ -53,6 +54,7 @@ var stat_sun := 0
 var stat_coins := 0
 var stat_plants := 0
 var mowers_used := 0
+var spares_left := 0
 
 var player: PlayerController
 var world: WorldBuilder
@@ -81,7 +83,7 @@ func setup(p_level: Dictionary, p_player: PlayerController, p_world: WorldBuilde
 	dir = float(Data.zombie_dir(yard))
 	goal_x = float(yard["goal_x"])
 	escape_x = float(yard["x1"]) + 5.0 if dir < 0.0 else float(yard["x0"]) - 5.0
-	sun = int(level["sun"])
+	sun = int(level["sun"]) + App.starting_sun_bonus()
 	player = p_player
 	world = p_world
 	_shake_cb = shake_cb
@@ -112,6 +114,9 @@ func _build_mowers() -> void:
 		m.setup(r, Vector3(float(yard["mower_x"]), 0.02, Data.row_z(yard, r)), -dir)
 		add_child(m)
 		mowers.append(m)
+	# spare mowers bought in the store are held back, then spent on the first
+	# lane that would otherwise be overrun
+	spares_left = App.spare_mowers()
 
 
 func _build_queue() -> void:
@@ -303,6 +308,7 @@ func plant_at(cell: Vector2i, kind: String) -> bool:
 	_burst(pos + Vector3(0, 0.08, 0), Color("#7a5c3c"), 14, 2.2, 0.09)
 	App.sfx_at("plant", pos, -3.0, randf_range(0.92, 1.06))
 	player.play_trowel(false)
+	App.mark_seen(kind)
 	if kind == "cherrybomb" or kind == "jalapeno":
 		App.sfx_at("groan3", pos, -10.0, 0.7)
 	return true
@@ -314,6 +320,11 @@ func dig_here() -> bool:
 	var p = plants.get(_aim)
 	if p != null and is_instance_valid(p):
 		plants.erase(_aim)
+		var back := int(round(float(Data.plant(p.kind)["cost"]) * App.shovel_refund()))
+		if back > 0:
+			sun += back
+			stat_sun += back
+			sun_changed.emit(sun)
 		p.die("dug")
 		App.sfx_at("dig", p.global_position, -3.0)
 		player.play_trowel(false)
@@ -731,8 +742,8 @@ func shove() -> bool:
 
 func spawn_sun(pos: Vector3, from_plant: bool, value := 25) -> void:
 	var orb := SunOrb.new()
-	orb.setup(pos, from_plant, value)
 	add_child(orb)
+	orb.setup(pos, from_plant, value)
 	suns.append(orb)
 
 
@@ -741,8 +752,10 @@ func spawn_sun(pos: Vector3, from_plant: bool, value := 25) -> void:
 func spawn_coin(pos: Vector3, n := 1) -> void:
 	for i in range(n):
 		var c := CoinOrb.new()
-		c.setup(pos + Vector3(randf_range(-0.12, 0.12), i * 0.14, randf_range(-0.12, 0.12)), 1)
+		# add first: setup() writes a global transform, which needs the node
+		# in the tree or Godot reports "!is_inside_tree()" and drops it at origin
 		add_child(c)
+		c.setup(pos + Vector3(randf_range(-0.12, 0.12), i * 0.14, randf_range(-0.12, 0.12)), 1)
 		coins.append(c)
 
 
@@ -768,7 +781,8 @@ func _update_coins(delta: float) -> void:
 func _collect_coin(c: CoinOrb) -> void:
 	if c.collected:
 		return
-	stat_coins += c.value
+	# the store's coin purse upgrade pays out a little extra per pickup
+	stat_coins += int(round(float(c.value) * App.coin_multiplier()))
 	App.sfx_at("coin", c.global_position, -7.0, randf_range(0.92, 1.14))
 	_burst(c.global_position, Color("#ffdf7a"), 6, 1.4, 0.06)
 	c.pop()
@@ -807,6 +821,19 @@ func breach(z: ZombieUnit) -> void:
 		z.start_dying(true)
 		_burst(z.global_position + Vector3(0, 0.8, 0), Color("#c9d6a0"), 14, 3.2, 0.1)
 		return
+	if spares_left > 0:
+		# a store-bought spare drops in on this lane and clears it
+		spares_left -= 1
+		var spare := LawnMower.new()
+		spare.setup(z.lane, Vector3(float(yard["mower_x"]), 0.02, Data.row_z(yard, z.lane)), -dir)
+		add_child(spare)
+		mowers.append(spare)
+		spare.launch()
+		mowers_used += 1
+		spare_dropped.emit(z.lane, spares_left)
+		z.start_dying(true)
+		_burst(z.global_position + Vector3(0, 0.8, 0), Color("#f2d38a"), 18, 3.6, 0.11)
+		return
 	if state == "playing":
 		state = "lost"
 		App.sfx("lose", -1.0)
@@ -827,6 +854,7 @@ func spawn_zombie(kind: String, lane: int) -> void:
 	var sub_lane: int = clampi(lane, 0, rows - 1)
 	var jitter := randf_range(-0.18, 0.18)
 	z.setup(kind, sub_lane, Vector3(float(yard["spawn_x"]), 0.02, Data.row_z(yard, sub_lane) + jitter), dir)
+	App.mark_seen(kind)
 	add_child(z)
 	z.died.connect(func() -> void:
 		stat_kills += 1

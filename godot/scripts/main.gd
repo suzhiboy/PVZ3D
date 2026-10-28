@@ -3,9 +3,18 @@ extends Node
 
 ## Boots the game: menu camera, level loading, input routing, pausing, results.
 
+## 注意：新增 class_name 后其他脚本需要 preload，因为 godot 的全局类缓存还没刷新
+## 用 preload 拿脚本，变量声明成无类型 Node 可以避开解析期类型检查
+const ALMANAC_SCRIPT := preload("res://scripts/ui/almanac.gd")
+const STORE_SCRIPT := preload("res://scripts/ui/store.gd")
+const TOMB_SCRIPT := preload("res://scripts/ui/menu_tomb.gd")
+
 var hud: Hud
 var menu: MenuScreen
+var tomb: Node
 var chooser: SeedChooser
+var almanac: Node
+var store: Node
 var world: WorldBuilder
 var player: PlayerController
 var match_ref: Match
@@ -37,6 +46,36 @@ func _ready() -> void:
 	menu.endless_chosen.connect(func() -> void: _choose_level("endless"))
 	menu.settings_changed.connect(_apply_settings)
 	menu.quit_pressed.connect(func() -> void: get_tree().quit())
+	menu.almanac_pressed.connect(_open_almanac)
+	menu.store_pressed.connect(_open_store)
+	# the cards are gone: the menu is the gravestone now, but the settings
+	# overlay still belongs to this layer
+	menu.show_cards(false)
+
+	tomb = TOMB_SCRIPT.new()
+	tomb.name = "MenuTomb"
+	add_child(tomb)
+	tomb.level_chosen.connect(_choose_level)
+	tomb.continue_pressed.connect(_continue)
+	tomb.endless_chosen.connect(func() -> void: _choose_level("endless"))
+	tomb.settings_pressed.connect(_on_menu_settings)
+	tomb.quit_pressed.connect(func() -> void: get_tree().quit())
+	tomb.almanac_pressed.connect(_open_almanac)
+	tomb.store_pressed.connect(_open_store)
+
+	almanac = ALMANAC_SCRIPT.new()
+	almanac.name = "Almanac"
+	add_child(almanac)
+	almanac.closed.connect(_on_almanac_closed)
+
+	store = STORE_SCRIPT.new()
+	store.name = "Store"
+	add_child(store)
+	store.closed.connect(_on_store_closed)
+	store.purse_changed.connect(func(_v: int) -> void:
+		if menu != null:
+			menu.refresh()
+	)
 
 	chooser = SeedChooser.new()
 	chooser.name = "SeedChooser"
@@ -181,6 +220,10 @@ func _run_test(which: String) -> void:
 			_zombies_test()
 		"coins":
 			_coins_test()
+		"store":
+			_store_test()
+		"art":
+			_art_test()
 		"water":
 			_water_test()
 		"audio":
@@ -190,7 +233,7 @@ func _run_test(which: String) -> void:
 			get_tree().quit()
 
 
-## Every entry point — level card, 继续游戏, 下一关 — must land on the chooser.
+## 每个入口：关卡卡片、继续游戏、下一关都必须落在选卡界面。
 func _flow_test() -> void:
 	hud.visible = false
 	for lv in Data.LEVELS:
@@ -510,6 +553,161 @@ func _audio_test() -> void:
 	get_tree().quit()
 
 
+## Store check: every upgrade bought with coins must change the next match,
+func _art_test() -> void:
+	# Model guards: every plant/zombie must build, keep the rig contract that
+	# gameplay animates by node name, and keep roughly the card silhouette.
+	var fails := 0
+	var cards := {}
+	var f := FileAccess.open("res://tools/model-ref/out/cards.json", FileAccess.READ)
+	if f != null:
+		var parsed: Variant = JSON.parse_string(f.get_as_text())
+		f.close()
+		if parsed is Dictionary:
+			for group in ["plants", "zombies"]:
+				for item in parsed.get(group, []):
+					if item is Dictionary and item.has("kind"):
+						cards[String(item["kind"])] = float(item.get("aspect", 0.0))
+	print("[art] card aspects loaded: ", cards.size())
+
+	var plant_extra := {"chomper": 2, "potatomine": 1, "wallnut": 1, "tallnut": 1,
+		"kernelpult": 1, "melonpult": 1, "threepeater": 3}
+	var plant_extra_name := {"potatomine": "Led", "wallnut": "Cracks", "tallnut": "Cracks",
+		"kernelpult": "Arm", "melonpult": "Arm"}
+	# A measuring holder keeps every model inside the tree, so _model_aabb can
+	# use global transforms without spamming "!is_inside_tree()" errors.
+	var holder := Node3D.new()
+	holder.name = "ArtTestHolder"
+	add_child(holder)
+	for kind in Data.PLANTS.keys():
+		var rig = Art.plant_model(kind)
+		if rig == null or rig.head == null:
+			print("[art] plant ", kind, " -> FAIL rig/head")
+			fails += 1
+			continue
+		var meshes: int = rig.root.find_children("*", "MeshInstance3D", true, false).size()
+		if meshes < 4:
+			print("[art] plant ", kind, " -> FAIL meshes=", meshes)
+			fails += 1
+		var want: int = plant_extra.get(kind, 0)
+		if rig.extra.size() != want:
+			print("[art] plant ", kind, " -> FAIL extra=", rig.extra.size(), " want=", want)
+			fails += 1
+		elif want == 1 and plant_extra_name.has(kind):
+			var nm: String = String(rig.extra[0].name)
+			if nm != plant_extra_name[kind]:
+				print("[art] plant ", kind, " -> FAIL extra name=", nm)
+				fails += 1
+		holder.add_child(rig.root)
+		var mb: AABB = _model_aabb(rig.root)
+		holder.remove_child(rig.root)
+		var aspect: float = mb.size.x / maxf(mb.size.y, 0.001)
+		if cards.has(kind) and float(cards[kind]) > 0.05:
+			var want_aspect: float = float(cards[kind])
+			var dev: float = absf(aspect - want_aspect) / want_aspect
+			if dev > 0.45:
+				print("[art] plant ", kind, " aspect=", String.num(aspect, 2),
+					" card=", String.num(want_aspect, 2), " dev=", String.num(dev, 2), " (warn)")
+		print("[art] plant ", kind, " ok meshes=", meshes, " aspect=", String.num(aspect, 2))
+
+	for kind in Data.zombie_kinds():
+		var zr = Art.zombie_model(kind)
+		if zr == null or zr.head == null:
+			print("[art] zombie ", kind, " -> FAIL rig/head")
+			fails += 1
+			continue
+		var zm: int = zr.root.find_children("*", "MeshInstance3D", true, false).size()
+		if zm < 12:
+			print("[art] zombie ", kind, " -> FAIL meshes=", zm)
+			fails += 1
+		print("[art] zombie ", kind, " ok meshes=", zm)
+	holder.queue_free()
+	print("[art] fails=", fails)
+	get_tree().quit()
+
+
+## and the shop must never let the wallet go negative.
+func _store_test() -> void:
+	var wallet0 := App.wallet()
+	var ups0: Dictionary = App.save.get("upgrades", {}).duplicate()
+	var fails := 0
+
+	# 1) buying spends exactly the listed price and raises the level
+	App.save["coins"] = 1000
+	App.save["upgrades"] = {}
+	var lv0 := App.upgrade_level("sun_bank")
+	var cost0 := App.upgrade_cost("sun_bank")
+	var ok_buy := App.buy_upgrade("sun_bank")
+	var spent: int = 1000 - App.wallet()
+	print("[store] buy sun_bank -> ok=", ok_buy, " spent=", spent, " cost=", cost0,
+		" lv=", App.upgrade_level("sun_bank"))
+	if not (ok_buy and spent == cost0 and App.upgrade_level("sun_bank") == lv0 + 1):
+		fails += 1
+
+	# 2) cannot buy what the purse cannot cover, and max level is respected
+	App.save["coins"] = 10
+	var broke := App.buy_upgrade("spare_mower")
+	print("[store] broke buy -> ", broke, " (expect false), coins=", App.wallet())
+	if broke or App.wallet() != 10:
+		fails += 1
+	App.save["coins"] = 5000
+	while App.upgrade_cost("shovel") >= 0:
+		App.buy_upgrade("shovel")
+	var capped := App.upgrade_cost("shovel")
+	print("[store] shovel maxed -> cost=", capped, " lv=", App.upgrade_level("shovel"))
+	if capped != -1:
+		fails += 1
+
+	# 3) upgrades reach the match: sun bonus, spares, refund, coin multiplier
+	App.save["upgrades"] = {"sun_bank": 2, "spare_mower": 1, "shovel": 1, "purse": 1}
+	_start_level("front-1", [])
+	var m := match_ref
+	var base_sun := int(Data.level("front-1")["sun"])
+	print("[store] start sun=", m.sun, " base=", base_sun, " bonus=", App.starting_sun_bonus())
+	if m.sun != base_sun + 50:
+		fails += 1
+	print("[store] spares=", m.spares_left, " mowers=", m.mowers.size())
+	if m.spares_left != 1:
+		fails += 1
+
+	# 4) shovel refund returns a quarter of the plant's cost
+	m.sun = 500
+	m.spawn_queue = [{"t": 9999.0, "kind": "basic", "lane": 0, "wave": 0}]
+	var cell := Vector2i(1, 1)
+	m._aim = cell
+	var planted := m.plant_at(cell, "wallnut")
+	var before_dig: int = m.sun
+	m.dig_here()
+	var refund: int = m.sun - before_dig
+	print("[store] planted=", planted, " dig refund=", refund,
+		" expect=", int(round(50.0 * App.shovel_refund())))
+	if not planted or refund != int(round(50.0 * App.shovel_refund())):
+		fails += 1
+
+	# 5) spare mower takes the breach instead of ending the run
+	var z := _test_zombie(m, "basic", 0)
+	m.spares_left = 1
+	m.mowers.clear()
+	m.breach(z)
+	print("[store] breach with spare -> state=", m.state, " spares=", m.spares_left,
+		" mowers=", m.mowers.size())
+	if m.state == "lost" or m.spares_left != 0:
+		fails += 1
+
+	# 6) coin multiplier pays out extra per pickup
+	App.save["upgrades"] = {"purse": 2}
+	print("[store] coin multiplier lv2 =", App.coin_multiplier())
+	if not is_equal_approx(App.coin_multiplier(), 1.5):
+		fails += 1
+
+	# restore the real save so a test run never edits the profile
+	App.save["coins"] = wallet0
+	App.save["upgrades"] = ups0
+	App.persist()
+	print("[store] fails=", fails)
+	get_tree().quit()
+
+
 ## Economy check: the drop table pays out in range, coins magnet to the
 ## player, and the wallet banks across matches.
 func _coins_test() -> void:
@@ -626,6 +824,24 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if shot == "menu":
 		_open_menu()
+	elif shot == "almanac":
+		_open_menu()
+		# the shot needs a populated page, but this must not touch the real save
+		App.save["seen"] = ["sunflower", "peashooter", "wallnut", "snowpea",
+			"cherrybomb", "potatomine", "repeater", "chomper", "basic", "cone", "bucket"]
+		await get_tree().process_frame
+		_open_almanac()
+		if sel != "":
+			almanac._switch("zombies" if sel.begins_with("z:") else "plants")
+			almanac._select(sel.trim_prefix("z:"))
+	elif shot == "store":
+		_open_menu()
+		App.save["coins"] = maxi(App.wallet(), 900)
+		await get_tree().process_frame
+		_open_store()
+	elif shot == "lineup":
+		# art review: one model, neutral stage, card-like framing (`cam=` = view)
+		_build_lineup(sel, cam)
 	elif shot == "choose":
 		_open_menu()
 		await get_tree().process_frame
@@ -654,7 +870,7 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		for i in range(7):
 			match_ref.spawn_coin(Vector3(-3.4 + i * 0.85, 0.4, -1.2 + (i % 3) * 0.75), 1)
-		# 三枚落在脚边，等磁吸收走，HUD 徽章就能拍到数字
+# 内部用的 UI 提示：HUD 的文案与按钮状态
 		if cam != "":
 			var cb := cam.split(",")
 			if cb.size() >= 3:
@@ -777,16 +993,192 @@ func _shot(shot: String, lvl: String, out: String, warp: float, cam: String, pre
 	OS.kill(OS.get_process_id())
 
 
+## Art-review stage: one model, neutral backdrop, orthographic card-like framing.
+## Driven by --shot=lineup --sel=<kind> --cam=front|threeq|side --out=<png>, or in
+## bulk by start_art_sweep() (the shot flag needs cmdline args, which a live
+## instance does not have).
+func _build_lineup(sel_kind: String, view: String) -> void:
+	# Hold a direct reference: renaming a parked node is not reliable enough to
+	# free it by name, and a leftover stage would stack two models in one frame.
+	if _lineup_stage != null and is_instance_valid(_lineup_stage):
+		_lineup_stage.free()
+	_lineup_stage = null
+	if hud != null:
+		hud.visible = false
+	if world != null and is_instance_valid(world):
+		world.visible = false
+	if menu != null:
+		menu.show_cards(false)
+	if tomb != null and is_instance_valid(tomb):
+		tomb.show_menu(false)
+	if almanac != null:
+		almanac.force_hide()
+	if store != null:
+		store.force_hide()
+
+	var stage := Node3D.new()
+	stage.name = "Lineup"
+	# park the stage far above the yard so no fence/bush leaks into the frame
+	stage.position = Vector3(0, 300.0, 0)
+	add_child(stage)
+	_lineup_stage = stage
+
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("#e9e3d3")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("#cfd8e6")
+	env.ambient_light_energy = 0.95
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	var we := WorldEnvironment.new()
+	we.environment = env
+	stage.add_child(we)
+
+	var key := DirectionalLight3D.new()
+	key.rotation_degrees = Vector3(-32, 42, 0)
+	key.light_color = Color("#fff3d8")
+	key.light_energy = 1.5
+	stage.add_child(key)
+	var rim := DirectionalLight3D.new()
+	rim.rotation_degrees = Vector3(-16, -120, 0)
+	rim.light_color = Color("#a9c8e8")
+	rim.light_energy = 0.7
+	stage.add_child(rim)
+
+	var kind := sel_kind if sel_kind != "" else "peashooter"
+	var is_zombie := kind.begins_with("z:")
+	var node: Node3D
+	if is_zombie:
+		node = Art.zombie_model(kind.trim_prefix("z:")).root
+	else:
+		node = Art.plant_model(kind).root
+	stage.add_child(node)
+
+	match view:
+		"side":
+			node.rotation.y = 0.0
+		"threeq":
+			node.rotation.y = -PI * 0.5 + 0.42
+		_:
+			node.rotation.y = -PI * 0.5
+
+	var box := _model_aabb(node, stage.global_transform.affine_inverse())
+	var center := box.get_center()
+	var aspect := 16.0 / 9.0
+	var flat := box.size.y < 0.3
+	var span := maxf(box.size.y, box.size.x / aspect) * 1.12
+	if flat:
+		span = maxf(box.size.x, box.size.z) * 1.18
+	var cam := Camera3D.new()
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.size = maxf(span, 0.2)
+	cam.near = 0.05
+	cam.far = 80.0
+	stage.add_child(cam)
+	# look_at takes GLOBAL coordinates, but the box above is in stage space
+	cam.position = Vector3(center.x, center.y, center.z + 20.0)
+	cam.look_at(stage.global_transform * Vector3(center.x, center.y, center.z))
+	if flat:
+		# a lily pad seen edge-on is a sliver — tilt down so the shape reads
+		cam.position = Vector3(center.x, center.y + 12.0, center.z + 15.0)
+		cam.look_at(stage.global_transform * Vector3(center.x, center.y, center.z))
+	cam.current = true
+	print("[lineup] kind=", kind, " view=", view, " aabb=", box, " ortho=", cam.size)
+
+
+## Merge every mesh AABB of a built model into one box, expressed in the space of
+## `to_space` (so a stage parked far from the origin still frames correctly).
+static func _model_aabb(root: Node3D, to_space := Transform3D.IDENTITY) -> AABB:
+	var box := AABB()
+	var first := true
+	var meshes := root.find_children("*", "MeshInstance3D", true, false)
+	for mi in meshes:
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		var local: AABB = m.mesh.get_aabb()
+		var xf := to_space * m.global_transform
+		for i in range(8):
+			var corner := local.get_endpoint(i)
+			var p := xf * corner
+			if first:
+				box = AABB(p, Vector3.ZERO)
+				first = false
+			else:
+				box = box.expand(p)
+	if first:
+		box = AABB(Vector3(-0.3, 0.0, -0.3), Vector3(0.6, 0.9, 0.6))
+	return box
+
+
+# --- art sweep -------------------------------------------------------------
+# The bridge cannot pass cmdline args to a live instance, so batch art shots are
+# driven from _process: build one stage, let it render, save, next.
+
+var _sweep: Array = []
+var _sweep_wait := 0
+var _sweep_total := 0
+var _lineup_stage: Node3D = null
+
+
+func start_art_sweep(kinds: Array, views: Array, outdir: String) -> String:
+	# Image.save_png does not create directories, so do it up front
+	DirAccess.make_dir_recursive_absolute(outdir)
+	_sweep.clear()
+	for k in kinds:
+		for v in views:
+			var name := str(k).replace(":", "-")
+			_sweep.append({
+				"kind": str(k), "view": str(v),
+				"out": "%s/%s-%s.png" % [outdir, name, str(v)],
+				"built": false,
+			})
+	_sweep_total = _sweep.size()
+	_sweep_wait = 2
+	print("[sweep] queued ", _sweep_total, " shots -> ", outdir)
+	return "%d shots" % _sweep_total
+
+
+func _sweep_tick() -> void:
+	if _sweep.is_empty():
+		return
+	if _sweep_wait > 0:
+		_sweep_wait -= 1
+		return
+	var job: Dictionary = _sweep[0]
+	if not bool(job["built"]):
+		_build_lineup(str(job["kind"]), str(job["view"]))
+		job["built"] = true
+		_sweep_wait = 3
+		return
+	var img := get_viewport().get_texture().get_image()
+	var err := img.save_png(str(job["out"]))
+	print("[sweep] ", _sweep_total - _sweep.size() + 1, "/", _sweep_total,
+		" ", job["kind"], " ", job["view"], " -> ", err)
+	_sweep.pop_front()
+	_sweep_wait = 2
+	if _sweep.is_empty():
+		print("[sweep] done")
+
+
 func _process(delta: float) -> void:
+	if not _sweep.is_empty():
+		_sweep_tick()
 	if mode == "playing" and match_ref != null and is_instance_valid(match_ref):
 		match_ref.update(delta)
 		_update_prompt()
 	elif mode == "menu" and menu_cam != null and is_instance_valid(menu_cam):
 		_menu_t += delta
-		var base := Vector3(10.4, 4.3, 5.4)
-		var aim := Vector3(-13.8, 1.9, -0.8)
-		menu_cam.position = base + Vector3(sin(_menu_t * 0.16) * 0.6, sin(_menu_t * 0.24) * 0.14, cos(_menu_t * 0.14) * 0.5)
-		menu_cam.look_at(aim)
+		if tomb != null and is_instance_valid(tomb) and tomb.is_open():
+			# a few centimetres of drift is enough: the stone stays framed
+			var sway := Vector3(sin(_menu_t * 0.24) * 0.15, sin(_menu_t * 0.33) * 0.04, 0.0)
+			menu_cam.position = tomb.cam_point(sway)
+			menu_cam.look_at(tomb.look_point())
+		else:
+			var base := Vector3(10.4, 4.3, 5.4)
+			var aim := Vector3(-13.8, 1.9, -0.8)
+			menu_cam.position = base + Vector3(sin(_menu_t * 0.16) * 0.6, sin(_menu_t * 0.24) * 0.14, cos(_menu_t * 0.14) * 0.5)
+			menu_cam.look_at(aim)
 
 
 func _update_prompt() -> void:
@@ -801,9 +1193,9 @@ func _update_prompt() -> void:
 		return
 	var c := world.chimney_look(player.eye_position(), player.look_dir())
 	if c > 0:
-		hud.set_prompt("[E] 爬进烟囱")
+			hud.set_prompt("[E] 爬烟囱")
 	elif c < 0:
-		hud.set_prompt("[E] 顺着烟囱下到二楼")
+		hud.set_prompt("[E] 打开舱门")
 	else:
 		hud.set_prompt("")
 
@@ -811,7 +1203,7 @@ func _update_prompt() -> void:
 # --- flow ------------------------------------------------------------------
 
 func _choose_level(id: String) -> void:
-	# every entry point goes through here: level card, 继续游戏, 下一关
+# 所有入口都会走到这里：关卡卡片、继续游戏、下一关
 	mode = "chooser"
 	get_tree().paused = false
 	hud.hide_end()
@@ -833,16 +1225,66 @@ func _open_menu() -> void:
 	mode = "menu"
 	if chooser != null:
 		chooser.close()
+	if almanac != null:
+		almanac.force_hide()
+	if store != null:
+		store.force_hide()
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	hud.visible = false
 	hud.hide_end()
 	_teardown()
 	_build_world("dawn")
+	_place_tomb()
 	_decorate_menu_garden()
 	_build_menu_camera()
-	menu.show_menu(true)
+	tomb.show_menu(true)
 	App.play_music("menu")
+
+
+## The stone stands where the old card menu used to be: on the lawn in front of
+## the porch, face turned east so the camera looks past it at the house.
+func _place_tomb() -> void:
+	if tomb == null or not is_instance_valid(tomb):
+		return
+	tomb.position = Vector3(-5.55, 0.0, 1.15)
+	tomb.rotation.y = PI * 0.5
+
+
+## Settings stays a card panel, floating over the 3-D menu (it dims the whole
+## screen, so the stone showing through is exactly what we want).
+func _on_menu_settings() -> void:
+	if menu != null:
+		menu.show_cards(false)
+		menu._open_settings()
+
+
+## 收尾：把状态改动写回存档并刷新界面
+## 注意：UI 文案改动后要重新拍照验收
+func _open_almanac() -> void:
+	if mode != "menu":
+		return
+	tomb.show_menu(false)
+	menu.show_cards(false)
+	almanac.open("plants")
+
+
+func _on_almanac_closed() -> void:
+	if mode == "menu":
+		tomb.show_menu(true)
+
+
+func _open_store() -> void:
+	if mode != "menu":
+		return
+	tomb.show_menu(false)
+	menu.show_cards(false)
+	store.open()
+
+
+func _on_store_closed() -> void:
+	if mode == "menu":
+		tomb.show_menu(true)
 
 
 func _decorate_menu_garden() -> void:
@@ -853,8 +1295,13 @@ func _decorate_menu_garden() -> void:
 		[4, 3, "tallnut"], [5, 2, "chomper"], [2, 4, "potatomine"],
 	]
 	for s in spots:
-		var u := PlantUnit.new()
 		var pos := Vector3(Data.col_x(Data.FRONT, int(s[0])), 0.03, Data.row_z(Data.FRONT, int(s[1])))
+		# keep the frame around the gravestone clear so the menu reads
+		if tomb != null and is_instance_valid(tomb):
+			var flat := Vector2(pos.x - tomb.position.x, pos.z - tomb.position.z)
+			if flat.length() < 3.10:
+				continue
+		var u := PlantUnit.new()
 		u.setup(str(s[2]), int(s[0]), int(s[1]), pos, 1.0, false)
 		# sunflowers look at the gardener, but the menu camera is behind the
 		# lawn — turn them round so the hero shot is not a field of seed heads
@@ -883,7 +1330,9 @@ func _start_level(id: String, picks: Array = []) -> void:
 		loadout = Array(level["seeds"])
 	get_tree().paused = false
 	mode = "playing"
-	menu.show_menu(false)
+	menu.show_cards(false)
+	if tomb != null and is_instance_valid(tomb):
+		tomb.show_menu(false)
 	chooser.close()
 	hud.visible = true
 	hud.hide_end()
@@ -952,9 +1401,11 @@ func _build_world(sky: String) -> void:
 func _build_menu_camera() -> void:
 	menu_cam = Camera3D.new()
 	menu_cam.name = "MenuCam"
-	menu_cam.fov = 56.0
+	menu_cam.fov = 52.0
 	add_child(menu_cam)
 	menu_cam.current = true
+	if tomb != null and is_instance_valid(tomb):
+		tomb.frame_camera(menu_cam)
 
 
 func _apply_settings() -> void:
@@ -980,6 +1431,14 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# the almanac and the shop are modal: Esc backs out of them before anything else
+	if mode == "menu":
+		if event.is_action_pressed("ui_cancel"):
+			if almanac != null and almanac.visible:
+				almanac.close()
+			elif store != null and store.visible:
+				store.close()
+		return
 	if mode != "playing" or match_ref == null or not is_instance_valid(match_ref):
 		return
 

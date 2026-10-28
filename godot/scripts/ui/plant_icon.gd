@@ -7,6 +7,8 @@ extends SubViewportContainer
 var kind := "sunflower"
 var zombie := false
 var spin := 0.45
+## > 1 pulls the camera back, for larger preview panes that need margin.
+var zoom := 1.0
 var viewport: SubViewport
 var model: Node3D
 var _cam: Camera3D
@@ -86,7 +88,7 @@ func _build_model() -> void:
 			var h: float = (m.mesh as PrimitiveMesh).get_aabb().size.y
 			top = max(top, m.position.y + h * 0.5)
 	top = clamp(top, 0.4, 1.6)
-	var dist := 1.45 + top * 1.35
+	var dist := (1.45 + top * 1.35) * zoom
 	_cam.position = Vector3(0, top * 0.62 + 0.08, dist)
 	_cam.look_at(Vector3(0, top * 0.5, 0))
 

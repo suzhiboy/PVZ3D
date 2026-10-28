@@ -31,6 +31,8 @@ var save := {
 	"endless_best": 0,
 	"endless_runs": 0,
 	"coins": 0,
+	"upgrades": {},
+	"seen": [],
 }
 var settings := {
 	"sensitivity": 0.0022,
@@ -304,8 +306,15 @@ func music_gain_db() -> float:
 
 
 func _exit_tree() -> void:
-	# the ambience keeps a stream alive past shutdown otherwise, which shows up
-	# as "1 resources still in use at exit"
+	# NOTE: stopping the pooled players here does NOT clear the "ObjectDB
+	# instances were leaked" / "resources still in use at exit" warnings. With
+	# --verbose the survivors are AudioStreamPlaybackWAV/MP3 + the .wav/.mp3
+	# behind them, i.e. playbacks the AudioServer already owns at teardown; by
+	# the time an autoload sees _exit_tree the audio server is on its way out, so
+	# stop() cannot unregister them. Measured: identical counts with and without
+	# a stop()+stream=null sweep over _p2d/_p3d (store 18/8, plants 22/7), and 0/0
+	# only when no sound happens to be in flight — a timing race, not a leak we
+	# can fix from here. Kept the wind/music teardown, which does help.
 	if _wind != null:
 		_wind.stop()
 		_wind.stream = null
@@ -433,3 +442,114 @@ func set_picks(id: String, kinds: Array) -> void:
 
 func unlocked_count() -> int:
 	return int(save.get("unlocked", 0))
+
+
+# --- 图鉴 -------------------------------------------------------------------
+
+## Every plant or zombie the gardener has actually met, so the almanac can hide
+## things they have not seen yet instead of spoiling the next wave.
+func mark_seen(kind: String) -> void:
+	if kind == "":
+		return
+	var list: Array = save.get("seen", [])
+	if list.has(kind):
+		return
+	list.append(kind)
+	save["seen"] = list
+	persist()
+
+
+func seen(kind: String) -> bool:
+	return (save.get("seen", []) as Array).has(kind)
+
+
+func seen_count() -> int:
+	return (save.get("seen", []) as Array).size()
+
+
+func species_total() -> int:
+	return Data.PLANTS.size() + Data.zombie_kinds().size()
+
+
+# --- 商店 --------------------------------------------------------------------
+
+## Permanent upgrades bought with coins — the sink the coin drops were missing.
+## Each level of an upgrade is applied at match start, never inside the old save,
+## so the numbers stay readable and a fresh profile behaves like the original.
+const UPGRADES := {
+	"sun_bank": {
+		"name": "阳光储蓄",
+		"desc": "每局开局额外 +25 阳光",
+		"cost": [120, 260, 480],
+		"unit": "级",
+	},
+	"spare_mower": {
+		"name": "备用小推车",
+		"desc": "每局多一辆应急小推车",
+		"cost": [300, 620],
+		"unit": "辆",
+	},
+	"shovel": {
+		"name": "铲子回收",
+		"desc": "铲除植物返还 25% 阳光",
+		"cost": [150, 330],
+		"unit": "级",
+	},
+	"purse": {
+		"name": "钱袋衬里",
+		"desc": "捡到的金币 +25%",
+		"cost": [200],
+		"unit": "级",
+	},
+}
+
+
+func upgrade_level(id: String) -> int:
+	return int((save.get("upgrades", {}) as Dictionary).get(id, 0))
+
+
+func upgrade_max(id: String) -> int:
+	return (UPGRADES.get(id, {}) as Dictionary).get("cost", []).size()
+
+
+## -1 once the upgrade is maxed out.
+func upgrade_cost(id: String) -> int:
+	var costs: Array = (UPGRADES.get(id, {}) as Dictionary).get("cost", [])
+	var lv := upgrade_level(id)
+	if lv >= costs.size():
+		return -1
+	return int(costs[lv])
+
+
+func can_buy_upgrade(id: String) -> bool:
+	var c := upgrade_cost(id)
+	return c >= 0 and wallet() >= c
+
+
+func buy_upgrade(id: String) -> bool:
+	if not can_buy_upgrade(id):
+		return false
+	var c := upgrade_cost(id)
+	var ups: Dictionary = save.get("upgrades", {})
+	ups[id] = upgrade_level(id) + 1
+	save["upgrades"] = ups
+	save["coins"] = wallet() - c
+	persist()
+	sfx("coin", -3.0)
+	return true
+
+
+func starting_sun_bonus() -> int:
+	return upgrade_level("sun_bank") * 25
+
+
+func spare_mowers() -> int:
+	return upgrade_level("spare_mower")
+
+
+func shovel_refund() -> float:
+	return 0.25 * float(upgrade_level("shovel"))
+
+
+func coin_multiplier() -> float:
+	return 1.0 + 0.25 * float(upgrade_level("purse"))
