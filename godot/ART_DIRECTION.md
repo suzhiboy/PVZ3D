@@ -15,8 +15,7 @@
 
 ## 四条统一原则
 
-1. **轮廓优先**：植物和僵尸的辨识度来自外轮廓，所有新增细节不得破坏剪影。
-2. **暖阳冷影**：直射光偏奶油金，背光与天光偏蓝绿；阴影有颜色，不压成黑色。
+1. **轮廓优先**：植物和僵尸的辨识度来自外轮廓，所有新增细节不得破坏剪影。2. **暖阳冷影**：直射光偏奶油金，背光与天光偏蓝绿；阴影有颜色，不压成黑色。
 3. **颜料感而非塑料感**：表面允许轻微色差和笔触噪声，但不使用写实照片纹理。
 4. **植物志式 UI**：深苔绿底板、黄铜细边、奶油色文字，像庭院里的植物标牌，
    不使用高饱和霓虹色和纯黑面板。
@@ -103,3 +102,41 @@ Godot_v4.7.2-stable_win64_console.exe --path godot --resolution 1600x900 -- \
   --plants="2,0,sunflower;2,2,peashooter;3,1,wallnut;4,3,snowpea;4,1,repeater;3,4,chomper" \
   --warp=0.12 --out=style-after-yard-day.png
 ```
+
+## 模型对照流程（2D 卡面 → 3D 模型）
+
+改动 `scripts/art.gd` 之后按这个顺序自查：
+
+1. 抽卡面（一次性）：`powershell -File tools/model-ref/cards.ps1` — 从 `.ref/assets-full/663/images/Card` 裁出每个物种的彩色卡面、算包围盒宽高比和主色，写到 `tools/model-ref/out/cards/`。
+2. 渲染对照图：在运行中的实例里执行
+   `n.start_art_sweep(['sunflower','peashooter','wallnut','z:basic'], ['front','threeq'], 'D:/PVZ3D/godot/tools/model-ref/out/render')`
+   （`_shot` 依赖命令行参数，而 bridge 会丢掉用户参数，所以走这个批量接口）。
+3. 拼对照表：`powershell -File tools/model-ref/sheet.ps1 -Batch b1 -Kinds sunflower,peashooter,wallnut`
+   → `screenshots/model-ref-b1.png`，每行是「卡面 | 正面 | 3/4 侧面」。
+4. 判定标准：轮廓宽高比先对齐卡面（`cards.json` 的 `aspect`），再看五官位置与主色；描边粗细不要超过卡面的线宽。
+
+已知约束：植物一律朝 +X 建模，脸/眼睛/嘴必须在 +X 一侧，否则游戏里会背对僵尸；`lineup` 舞台停在 `y=300`，`look_at` 必须用世界坐标。
+
+### 四批改造进度
+
+| 批次 | 内容 | 状态 |
+| --- | --- | --- |
+| b1 | 向日葵、豌豆/寒冰/双发射手、坚果/高坚果、樱桃炸弹、基础/路障/铁桶僵尸 | 已完成（`model-ref-b1a/b1b/b1c/b1z`） |
+| b2 | 土豆雷、三线射手、大嘴花、睡莲、火爆辣椒、窝瓜、南瓜头、玉米/西瓜投手 | 已完成（`model-ref-b2f1/b2f2/b2r2a`） |
+| b3 | 九种蘑菇（小喷菇/阳光菇/大喷菇/魅惑菇/寒冰菇/毁灭菇/磁力菇…） | 已完成（`model-ref-b3a/b3f/b3g`） |
+| b4 | 旗帜/报纸/橄榄球/撑杆/铁门/气球/舞王/伴舞/巨人僵尸 | 已完成（`model-ref-b4a/b4b/b4c`） |
+
+自动守卫：`--test=art` 会加载 `tools/model-ref/out/cards.json`，逐个检查 23 种植物 + 12 种僵尸能否建模、`PlantRig.head` 是否存在、`extra[]` 的数量与节点名（`Jaw`/`Led`/`Cracks`/`Arm`/`Head0..2`）是否满足动画契约，宽高比偏离卡面超过 45% 时打 `(warn)`。当前 `fails=0`。
+
+用法：`_run_test('art')` 会自己 `quit()`，所以它要放在其余测试之后跑；`_art_test` 用一个临时 `Node3D` 容器把模型放进场景树再量包围盒，否则 `_model_aabb` 会刷一屏 `!is_inside_tree()` 错误。
+
+## 主菜单：把 UI 做成场景里的物件
+
+标题界面不再是一层卡片，而是草坪上一块**真的墓碑**（`scripts/ui/menu_tomb.gd`，`class_name MenuTomb`）：
+
+- 形体：草丘 + 台阶 + 台座 + 拱顶石板，石材用 `FastNoiseLite` + `Art.tex_mat(..., {"triplanar": true})` 生成三平面噪声，避免平涂高光造成的塑料感。
+- 文字：`TextMesh` 直接凿在石面上（标题、副标题、关卡石板、无尽石板），关卡星级也凿进石板，锁定关卡显示 🔒 并压暗。
+- 交互：每块石板挂 `StaticBody3D`（`collision_layer = 2`），鼠标移动时 `intersect_ray` 拾取，悬停把石板向前浮 3.5 cm 并在背后亮起金光，点击发 `click` 音并发出对应信号；锁住的关卡发 `deny`。
+- 次条目（继续 / 图鉴 / 商店 / 设置 / 退出）是台阶上一排小石牌，各自坐在小台座上。
+- 相机由 `MenuTomb.cam_point()/look_point()` 给，`MainGame._process` 只叠加几厘米的呼吸位移，因此取景永远锁在石头上。
+- 设置面板仍保留 2D 卡片层（`scripts/ui/menu.gd` 的 `show_cards(false)` 只隐藏卡片，不动设置窗口），浮在墓碑之上。

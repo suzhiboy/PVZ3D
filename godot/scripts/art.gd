@@ -335,9 +335,15 @@ static func _shroom_eyes(head: Node3D, x: float, y: float, gap: float, r: float,
 
 
 static func _mushroom_spots(head: Node3D, y: float, r: float, count: int, col: Color) -> void:
+	# scatter the spots around the front of the cap instead of one straight row,
+	# otherwise the cap reads as a plain balloon (cards all show spotted caps)
 	for i in range(count):
-		ball(head, r, Vector3(0.06, y + 0.02 * i, -0.1 + i * (0.2 / max(1, count - 1))),
-			toon(col, {"outline": false}), Vector3(0.8, 0.5, 0.8), 6, 4)
+		var a := -1.3 + 2.6 * (float(i) + 0.5) / maxf(1.0, float(count))
+		var rr := r * (0.6 + 0.16 * absf(sin(float(i) * 1.9)))
+		# sit the spot ON the cap ellipsoid: 0.7r out needs ~0.4r of height,
+		# otherwise it ends up buried inside the cap and never shows
+		ball(head, r * 0.19, Vector3(cos(a) * rr, y + r * (0.36 + 0.1 * absf(cos(float(i) * 1.3))),
+			sin(a) * rr), toon(col, {"outline": false}), Vector3(1.0, 0.4, 1.0), 7, 5)
 
 
 static func _lily_disc(parent: Node3D, mat: Material) -> MeshInstance3D:
@@ -378,31 +384,35 @@ static func plant_model(kind: String) -> PlantRig:
 			rig.head = head
 			var petal := toon(PETAL, {"bands": 3.0, "rim": 0.3})
 			var petal2 := toon(PETAL_DARK, {"bands": 3.0, "rim": 0.2})
-			var disc := toon(NUT_CENTER, {"bands": 3.0, "rim": 0.22})
-			# Green sepals behind the flower, rounded overlapping petals, and a
-			# convex seed face reproduce the original silhouette instead of a gear.
-			ball(head, 0.21, Vector3(0.045, 0, 0), toon(LEAF_DARK), Vector3(0.45, 1.0, 1.0), 14, 9)
-			for i in range(14):
-				var a := TAU * float(i) / 14.0
+			var disc := toon(Color("#c4762f"), {"bands": 3.0, "rim": 0.26})
+			# Plants face +X. The card puts a big seed disc in front and a short
+			# ring of rounded petals behind it, so the face must sit at +X and be
+			# the widest single element of the head.
+			for i in range(15):
+				var a := TAU * float(i) / 15.0
 				var pm := petal if i % 3 != 0 else petal2
-				var p := ball(head, 0.102, Vector3(0.025, cos(a) * 0.265, sin(a) * 0.265), pm,
-					Vector3(0.24, 1.48, 0.68), 10, 7)
+				var p := ball(head, 0.118, Vector3(-0.02, cos(a) * 0.425, sin(a) * 0.425), pm,
+					Vector3(0.30, 1.10, 0.86), 10, 7)
 				p.rotation = Vector3(a, 0, 0)
-			var c := ball(head, 0.205, Vector3(-0.022, 0, 0), disc, Vector3(0.34, 1.0, 1.0), 18, 12)
-			c.name = "Face"
+			# Small green calyx peeking out behind the petals, not in front of them.
+			ball(head, 0.30, Vector3(-0.075, 0, 0), toon(LEAF_DARK), Vector3(0.22, 1.0, 1.0), 16, 10)
+			var face := ball(head, 0.345, Vector3(0.035, 0, 0), disc, Vector3(0.40, 1.0, 1.0), 20, 13)
+			face.name = "Face"
 			for s in [-1, 1]:
-				ball(head, 0.028, Vector3(-0.091, 0.052, 0.065 * s), toon(EYE, {"outline": false}),
-					Vector3(0.48, 1.15, 0.82), 10, 7)
-				ball(head, 0.006, Vector3(-0.105, 0.063, 0.058 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 6, 4)
-			# Five tiny beads make a friendly upward-curving smile.
-			for i in range(5):
-				var z := (float(i) - 2.0) * 0.023
-				ball(head, 0.012, Vector3(-0.096, -0.055 - (1.0 - absf(float(i) - 2.0) * 0.5) * 0.022, z),
-					toon(Color("#3c2415"), {"outline": false}), Vector3(0.5, 0.7, 1.0), 6, 4)
-			for i in range(8):
-				var a := TAU * float(i) / 8.0
-				ball(head, 0.008, Vector3(-0.091, cos(a) * 0.135, sin(a) * 0.135),
-					toon(Color("#c28a3c"), {"outline": false}), Vector3.ONE, 6, 4)
+				ball(head, 0.062, Vector3(0.163, 0.085, 0.118 * s), toon(EYE, {"outline": false}),
+					Vector3(0.42, 1.22, 0.82), 10, 7)
+				ball(head, 0.014, Vector3(0.184, 0.104, 0.110 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 6, 4)
+			# A wide upward-curving smile, drawn as overlapping beads on the disc.
+			for i in range(7):
+				var z := (float(i) - 3.0) * 0.030
+				var dip := (1.0 - absf(float(i) - 3.0) / 3.0) * 0.032
+				ball(head, 0.015, Vector3(0.170, -0.055 - dip, z),
+					toon(Color("#3c2415"), {"outline": false}), Vector3(0.45, 0.75, 1.0), 6, 4)
+			# Seed dots around the rim of the disc read as the classic sunflower face.
+			for i in range(10):
+				var a := TAU * float(i) / 10.0 + 0.3
+				ball(head, 0.011, Vector3(0.152, cos(a) * 0.265, sin(a) * 0.265),
+					toon(Color("#96601f"), {"outline": false}), Vector3.ONE, 6, 4)
 
 		"peashooter", "snowpea", "repeater":
 			_mound(root)
@@ -420,8 +430,10 @@ static func plant_model(kind: String) -> PlantRig:
 			rig.head = head
 			var body_mat := toon(ICE if icy else PEA, {"bands": 3.0, "rim": 0.3, "glow": 0.06 if icy else 0.0})
 			# A long bean-shaped head, heavier at the back and narrower at the muzzle.
-			ball(head, 0.245, Vector3(-0.05, 0.02, 0), body_mat, Vector3(1.3, 1.04, 0.94), 20, 13)
-			ball(head, 0.17, Vector3(-0.185, -0.015, 0), body_mat, Vector3(1.12, 0.92, 0.84), 12, 8)
+			# The card head is clearly wider than it is tall, so the x stretch is
+			# generous and the verticall bulge stays modest.
+			ball(head, 0.245, Vector3(-0.05, 0.02, 0), body_mat, Vector3(1.46, 0.98, 0.94), 20, 13)
+			ball(head, 0.17, Vector3(-0.19, -0.015, 0), body_mat, Vector3(1.18, 0.86, 0.84), 12, 8)
 			var snouts := 2 if kind == "repeater" else 1
 			var snout_len := 0.31
 			var muzzle := toon(ICE_DEEP if icy else LEAF_DARK, {"bands": 2.0})
@@ -471,10 +483,15 @@ static func plant_model(kind: String) -> PlantRig:
 				rig.extra.append(h)
 				var mat := toon(PEA, {"bands": 3.0, "rim": 0.25})
 				ball(h, 0.15, Vector3.ZERO, mat)
-				cyl(h, 0.07, 0.2, Vector3(0.16, 0, 0), mat, Vector3(0, 0, PI * 0.5), 9)
+				cyl(h, 0.085, 0.22, Vector3(0.15, 0, 0), mat, Vector3(0, 0, PI * 0.5), 9)
+				# dark muzzle so the snout reads from the front, like the card
+				ball(h, 0.075, Vector3(0.265, 0, 0), toon(Color("#2f4a1c"), {"outline": false}),
+					Vector3(0.42, 1.02, 1.02), 8, 6)
 				for s in [-1, 1]:
 					ball(h, 0.028, Vector3(0.1, 0.045, 0.058 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 6, 4)
 					ball(h, 0.015, Vector3(0.118, 0.045, 0.058 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+			# the middle head is the rig's head; the other two stay in extra[]
+			rig.head = rig.extra[1]
 
 		"wallnut", "tallnut":
 			var tall := kind == "tallnut"
@@ -485,28 +502,32 @@ static func plant_model(kind: String) -> PlantRig:
 			var mat := toon(NUT, {"bands": 3.0, "rim": 0.25})
 			var shell_light := toon(NUT_LIGHT, {"bands": 2.0, "rim": 0.12, "outline": false})
 			ball(body, 0.37 if tall else 0.36, Vector3(0, sy * 0.62, 0), mat,
-				Vector3(0.92, sy / 0.55, 0.9), 18, 13)
+				Vector3(0.94, sy / 0.55, 0.96), 18, 13)
 			# The lighter front is only a shallow colour patch, not a second ball.
-			ball(body, 0.335, Vector3(-0.022, sy * 0.64, 0), shell_light,
-				Vector3(0.81, sy / 0.57, 0.77), 16, 11)
+			ball(body, 0.335, Vector3(0.026, sy * 0.64, 0), shell_light,
+				Vector3(0.86, sy / 0.57, 0.82), 16, 11)
 			for s in [-1, 1]:
-				var eye_x := -0.292
-				var eye_z := 0.105 * float(s)
-				ball(body, 0.088, Vector3(eye_x, cy + 0.08, eye_z),
-					toon(NUT_CENTER.darkened(0.35), {"outline": false}), Vector3(0.3, 1.02, 0.94), 12, 8)
-				ball(body, 0.078, Vector3(eye_x - 0.012, cy + 0.08, eye_z), toon(WHITE, {"outline": false}),
-					Vector3(0.27, 1.02, 0.91), 14, 10)
-				ball(body, 0.034, Vector3(eye_x - 0.034, cy + 0.073, 0.10 * float(s)),
-					toon(EYE, {"outline": false}), Vector3(0.4, 1.0, 0.92), 10, 7)
-				ball(body, 0.009, Vector3(eye_x - 0.047, cy + 0.088, 0.092 * float(s)),
+				var eye_x := 0.292
+				var eye_z := 0.115 * float(s)
+				ball(body, 0.098, Vector3(eye_x, cy + 0.035, eye_z),
+					toon(NUT_CENTER.darkened(0.35), {"outline": false}), Vector3(0.28, 1.02, 0.94), 12, 8)
+				ball(body, 0.088, Vector3(eye_x + 0.014, cy + 0.035, eye_z), toon(WHITE, {"outline": false}),
+					Vector3(0.26, 1.02, 0.94), 14, 10)
+				ball(body, 0.038, Vector3(eye_x + 0.038, cy + 0.028, 0.108 * float(s)),
+					toon(EYE, {"outline": false}), Vector3(0.4, 1.0, 0.94), 10, 7)
+				ball(body, 0.010, Vector3(eye_x + 0.052, cy + 0.044, 0.098 * float(s)),
 					toon(WHITE, {"outline": false}), Vector3.ONE, 6, 4)
-			box(body, Vector3(0.016, 0.018, 0.086), Vector3(-0.337, cy - 0.075, 0),
+				# Worried brow, the expression that sells the wall-nut.
+				var brow := ball(body, 0.062, Vector3(eye_x - 0.01, cy + 0.145, eye_z),
+					toon(NUT_CENTER.darkened(0.5), {"outline": false}), Vector3(0.22, 0.20, 0.72), 8, 5)
+				brow.rotation.x = 0.22 * float(s)
+			box(body, Vector3(0.016, 0.020, 0.095), Vector3(0.337, cy - 0.11, 0),
 				toon(NUT_CENTER.darkened(0.52), {"outline": false}), Vector3.ZERO, "Mouth")
 			# Sparse pores keep the shell organic without turning into polka dots.
-			for i in range(6):
-				var a := TAU * float(i) / 6.0 + 0.5
-				ball(body, 0.013, Vector3(-0.15, cy + cos(a) * sy * 0.33, sin(a) * 0.22),
-					toon(NUT_CENTER, {"outline": false}), Vector3(0.45, 0.72, 0.72), 6, 4)
+			for i in range(7):
+				var a := TAU * float(i) / 7.0 + 0.5
+				ball(body, 0.016, Vector3(0.13, cy + cos(a) * sy * 0.38, sin(a) * 0.26),
+					toon(NUT_CENTER.darkened(0.12), {"outline": false}), Vector3(0.35, 0.62, 0.62), 6, 4)
 			if tall:
 				# Tall-nut's messy brown tuft, built from overlapping soft blades.
 				for i in range(7):
@@ -541,32 +562,57 @@ static func plant_model(kind: String) -> PlantRig:
 			var h := pivot(sway, Vector3(0, 0, 0), "Head")
 			rig.head = h
 			var mat := toon(CHERRY, {"bands": 3.0, "rim": 0.35, "glow": 0.05})
+			var shine := toon(CHERRY.lightened(0.28), {"outline": false})
 			for s in [-1, 1]:
-				ball(h, 0.23, Vector3(0, 0.3, 0.17 * s), mat, Vector3(1.0, 0.95, 0.95))
-				var eye_y := 0.38
-				ball(h, 0.045, Vector3(-0.19, eye_y, 0.12 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
-				ball(h, 0.022, Vector3(-0.225, eye_y, 0.12 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
-				box(h, Vector3(0.02, 0.03, 0.1), Vector3(-0.21, eye_y + 0.09, 0.12 * s), toon(EYE, {"outline": false}), Vector3(-0.4, 0, 0))
-				cyl(h, 0.018, 0.2, Vector3(0, 0.56, 0.13 * s), toon(STEM_DARK, {"outline": false}), Vector3(0, 0, 0.3 * s), 6)
-			cyl(h, 0.03, 0.09, Vector3(0, 0.62, 0), toon(STEM, {"outline": false}), Vector3.ZERO, 6)
+				ball(h, 0.205, Vector3(0.02, 0.26, 0.155 * s), mat, Vector3(1.0, 0.96, 0.94), 16, 11)
+				# a small specular blob keeps the fruit reading as glossy, not plastic
+				ball(h, 0.05, Vector3(0.20, 0.38, 0.075 * s), shine, Vector3(0.45, 1.0, 0.8), 8, 6)
+				# Angry face on the +X side, the direction every plant faces. The
+				# cherries are 0.205 deep, so features have to sit near x=0.21 or
+				# they end up buried inside the fruit.
+				var eye_y := 0.27
+				ball(h, 0.052, Vector3(0.205, eye_y, 0.095 * s), toon(WHITE, {"outline": false}),
+					Vector3(0.4, 1.0, 1.0), 10, 7)
+				ball(h, 0.026, Vector3(0.228, eye_y - 0.004, 0.098 * s), toon(EYE, {"outline": false}),
+					Vector3(0.4, 1.0, 1.0), 8, 6)
+				var brow := box(h, Vector3(0.03, 0.028, 0.09), Vector3(0.222, eye_y + 0.075, 0.095 * s),
+					toon(EYE, {"outline": false}), Vector3.ZERO)
+				brow.rotation.x = 0.46 * float(s)
+				var mouth := box(h, Vector3(0.03, 0.018, 0.06), Vector3(0.232, 0.165, 0.058 * s),
+					toon(Color("#5a1210"), {"outline": false}), Vector3.ZERO)
+				mouth.rotation.x = -0.3 * float(s)
+				# Stem rises from the top of each cherry and leans toward the pair.
+				cyl(h, 0.017, 0.30, Vector3(0.01, 0.40, 0.13 * s), toon(STEM_DARK, {"outline": false}),
+					Vector3(0, 0, -0.34 * s), 6)
+			cyl(h, 0.024, 0.30, Vector3(0, 0.50, 0), toon(STEM, {"outline": false}), Vector3.ZERO, 6)
 			for i in range(2):
-				var lf := ball(h, 0.09, Vector3(-0.02 + (i - 0.5) * 0.12, 0.67, (i - 0.5) * 0.13),
-					toon(LEAF, {"bands": 2.0}), Vector3(1.7, 0.28, 0.62), 8, 5)
-				lf.rotation.y = (i - 0.5) * 0.75
+				var lf := ball(h, 0.10, Vector3(-0.01 + (i - 0.5) * 0.14, 0.80, (i - 0.5) * 0.10),
+					toon(LEAF, {"bands": 2.0}), Vector3(1.5, 0.24, 0.66), 8, 5)
+				lf.rotation.y = (i - 0.5) * 0.9
+				lf.rotation.z = 0.1 * float(i) - 0.05
 
 		"potatomine":
 			_mound(root)
 			var h := pivot(sway, Vector3(0, 0, 0), "Head")
 			rig.head = h
 			var mat := toon(Color("#b98a52"), {"bands": 2.0, "rim": 0.2})
-			ball(h, 0.24, Vector3(-0.02, 0.12, 0), mat, Vector3(1.15, 0.85, 1.0), 16, 11)
+			# the card potato is a low lumpy mound, not a dome
+			ball(h, 0.24, Vector3(-0.02, 0.1, 0), mat, Vector3(1.2, 0.62, 1.05), 16, 11)
+			for i in range(7):
+				var a2 := TAU * float(i) / 7.0 + 0.2
+				ball(root, 0.055, Vector3(cos(a2) * 0.29, 0.035, sin(a2) * 0.27),
+					toon(Color("#6d5236"), {"bands": 2.0}), Vector3(1.3, 0.7, 1.1), 7, 5)
 			for i in range(5):
 				var a := TAU * float(i) / 5.0 + 0.35
 				ball(h, 0.018, Vector3(-0.14, 0.12 + cos(a) * 0.14, sin(a) * 0.17),
 					toon(Color("#805a32"), {"outline": false}), Vector3(0.5, 0.8, 0.8), 6, 4)
 			for s in [-1, 1]:
-				ball(h, 0.035, Vector3(-0.19, 0.2, 0.075 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
-				ball(h, 0.019, Vector3(-0.218, 0.2, 0.075 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+				ball(h, 0.035, Vector3(0.225, 0.17, 0.075 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(h, 0.019, Vector3(0.252, 0.17, 0.075 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+			box(h, Vector3(0.02, 0.022, 0.12), Vector3(0.238, 0.11, 0), toon(Color("#5d3f1f"), {"outline": false}))
+			for s in [-1, 1]:
+				box(h, Vector3(0.018, 0.028, 0.03), Vector3(0.24, 0.135, 0.062 * s),
+					toon(Color("#f4ead6"), {"outline": false}))
 			var led := ball(h, 0.045, Vector3(0.0, 0.34, 0), toon(Color("#8a2a20"), {"glow": 0.0}), Vector3.ONE, 8, 6, "Led")
 			rig.extra.append(led)
 
@@ -636,6 +682,10 @@ static func plant_model(kind: String) -> PlantRig:
 		"lilypad":
 			var pad := toon(Color("#62ad4f"), {"bands": 3.0, "rim": 0.24})
 			_lily_disc(root, pad)
+			# A pad is flat, but the rig still needs a head pivot for gameplay
+			# squash/stretch, so hang one at the pad centre.
+			var pad_head := pivot(root, Vector3(0, 0.02, 0), "Head")
+			rig.head = pad_head
 			for i in range(7):
 				var a := 0.55 + float(i) * (TAU - 1.1) / 6.0
 				var vein := cyl(root, 0.008, 0.43,
@@ -661,9 +711,10 @@ static func plant_model(kind: String) -> PlantRig:
 			cone(h, 0.12, 0.2, Vector3(0.02, 0.05, 0), mat, Vector3(0, 0, 0), 10)
 			cyl(h, 0.03, 0.12, Vector3(0, 0.62, 0), toon(STEM, {"outline": false}), Vector3(0, 0, 0.2), 6)
 			for s in [-1, 1]:
-				ball(h, 0.035, Vector3(-0.15, 0.42, 0.06 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
-				ball(h, 0.019, Vector3(-0.178, 0.42, 0.06 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
-			box(h, Vector3(0.02, 0.025, 0.08), Vector3(-0.17, 0.47, 0), toon(EYE, {"outline": false}), Vector3(0, 0, 0.3))
+				ball(h, 0.035, Vector3(0.15, 0.42, 0.06 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(h, 0.019, Vector3(0.178, 0.42, 0.06 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+			box(h, Vector3(0.02, 0.025, 0.08), Vector3(0.17, 0.47, 0), toon(EYE, {"outline": false}), Vector3(0, 0, 0.3))
+			box(h, Vector3(0.02, 0.02, 0.1), Vector3(0.172, 0.355, 0), toon(Color("#6d1410"), {"outline": false}))
 
 		"squash":
 			_mound(root)
@@ -673,29 +724,32 @@ static func plant_model(kind: String) -> PlantRig:
 			ball(h, 0.32, Vector3(0, 0.26, 0), mat, Vector3(1.0, 0.95, 0.95), 14, 10)
 			ball(h, 0.1, Vector3(0, 0.56, 0), toon(STEM_DARK, {"outline": false}), Vector3(1.6, 0.5, 1.6), 8, 6)
 			for s in [-1, 1]:
-				ball(h, 0.045, Vector3(-0.26, 0.34, 0.1 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
-				ball(h, 0.022, Vector3(-0.295, 0.34, 0.1 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
-			box(h, Vector3(0.02, 0.04, 0.22), Vector3(-0.29, 0.17, 0), toon(EYE, {"outline": false}), Vector3(0, 0, -0.1))
+				ball(h, 0.045, Vector3(0.26, 0.34, 0.1 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(h, 0.022, Vector3(0.295, 0.34, 0.1 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+				box(h, Vector3(0.02, 0.03, 0.12), Vector3(0.278, 0.40, 0.11 * s), toon(EYE, {"outline": false}),
+					Vector3(0, 0, -0.34 * s))
+			box(h, Vector3(0.02, 0.04, 0.22), Vector3(0.29, 0.17, 0), toon(EYE, {"outline": false}), Vector3(0, 0, -0.1))
 
 		"pumpkin":
 			# a ring of lobes reads as a real gourd, and leaves the middle hollow
+			var shell := pivot(root, Vector3(0, 0.0, 0), "Head")
+			rig.head = shell
 			var body := toon(Color("#e8912f"), {"bands": 3.0, "rim": 0.3})
 			var body2 := toon(Color("#d97d22"), {"bands": 3.0, "rim": 0.28})
 			for i in range(8):
 				var a := TAU * float(i) / 8.0
-				ball(root, 0.2, Vector3(cos(a) * 0.34, 0.3, sin(a) * 0.34),
+				ball(shell, 0.2, Vector3(cos(a) * 0.34, 0.3, sin(a) * 0.34),
 					body if i % 2 == 0 else body2, Vector3(0.95, 1.55, 0.95), 10, 7)
-			cyl(root, 0.4, 0.03, Vector3(0, 0.07, 0), toon(Color("#3f2611"), {"outline": false}), Vector3.ZERO, 16)
-			torus(root, 0.34, 0.53, Vector3(0, 0.585, 0), toon(Color("#c66f18"), {"bands": 2.0}))
-			cyl(root, 0.055, 0.2, Vector3(-0.34, 0.62, -0.3), toon(Color("#6d7a3a")), Vector3(0.42, 0, 0.42), 6)
-			# the carved face looks back at the gardener — in both yards that is
-			# the model's -X side, which is where the player actually stands
+			cyl(shell, 0.4, 0.03, Vector3(0, 0.07, 0), toon(Color("#3f2611"), {"outline": false}), Vector3.ZERO, 16)
+			torus(shell, 0.34, 0.53, Vector3(0, 0.585, 0), toon(Color("#c66f18"), {"bands": 2.0}))
+			cyl(shell, 0.055, 0.2, Vector3(-0.34, 0.62, -0.3), toon(Color("#6d7a3a")), Vector3(0.42, 0, 0.42), 6)
+			# the carved face turns toward the zombies, i.e. the model's +X side
 			for s in [-1, 1]:
-				ball(root, 0.09, Vector3(-0.53, 0.42, 0.16 * s),
+				ball(shell, 0.09, Vector3(0.53, 0.42, 0.16 * s),
 					toon(Color("#2a1a0c"), {"outline": false}), Vector3(0.5, 1.0, 0.85), 8, 6)
-			box(root, Vector3(0.04, 0.11, 0.26), Vector3(-0.55, 0.25, 0), toon(Color("#2a1a0c"), {"outline": false}))
+			box(shell, Vector3(0.04, 0.11, 0.26), Vector3(0.55, 0.25, 0), toon(Color("#2a1a0c"), {"outline": false}))
 			for i in range(3):
-				box(root, Vector3(0.04, 0.06, 0.055), Vector3(-0.56, 0.31, -0.075 + i * 0.075),
+				box(shell, Vector3(0.04, 0.06, 0.055), Vector3(0.56, 0.31, -0.075 + i * 0.075),
 					toon(Color("#2a1a0c"), {"outline": false}))
 
 		"kernelpult":
@@ -716,8 +770,9 @@ static func plant_model(kind: String) -> PlantRig:
 				ball(hk, 0.027, Vector3(cos(aa) * 0.155, 0.1 + i * 0.052, sin(aa) * 0.155),
 					toon(Color("#f8dd7a"), {"outline": false}), Vector3.ONE, 6, 4)
 			for s in [-1, 1]:
-				ball(hk, 0.04, Vector3(-0.2, 0.32, 0.075 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
-				ball(hk, 0.021, Vector3(-0.232, 0.32, 0.075 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+				ball(hk, 0.04, Vector3(0.2, 0.32, 0.075 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(hk, 0.021, Vector3(0.232, 0.32, 0.075 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+			box(hk, Vector3(0.02, 0.018, 0.12), Vector3(0.216, 0.245, 0), toon(EYE, {"outline": false}))
 			var arm := pivot(hk, Vector3(0.0, 0.58, 0), "Arm")
 			box(arm, Vector3(0.5, 0.055, 0.055), Vector3(0.18, 0.04, 0), toon(WOOD, {"bands": 2.0}), Vector3(0, 0, 0.26))
 			box(arm, Vector3(0.15, 0.06, 0.14), Vector3(0.4, 0.16, 0), toon(Color("#f7e6a8"), {"bands": 2.0}))
@@ -735,8 +790,9 @@ static func plant_model(kind: String) -> PlantRig:
 				ball(hm, 0.028, Vector3(cos(am) * 0.255, 0.25, sin(am) * 0.255),
 					toon(Color("#2f5c22"), {"outline": false}), Vector3(0.45, 2.8, 0.45), 6, 4)
 			for s in [-1, 1]:
-				ball(hm, 0.045, Vector3(-0.24, 0.33, 0.09 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
-				ball(hm, 0.023, Vector3(-0.275, 0.33, 0.09 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+				ball(hm, 0.045, Vector3(0.24, 0.33, 0.09 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(hm, 0.023, Vector3(0.275, 0.33, 0.09 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+			box(hm, Vector3(0.02, 0.02, 0.1), Vector3(0.262, 0.245, 0), toon(EYE, {"outline": false}))
 			var marm := pivot(hm, Vector3(0.0, 0.5, 0), "Arm")
 			box(marm, Vector3(0.46, 0.06, 0.06), Vector3(0.16, 0.04, 0), toon(WOOD, {"bands": 2.0}), Vector3(0, 0, 0.28))
 			cyl(marm, 0.15, 0.1, Vector3(0.38, 0.14, 0), toon(Color("#a8763f"), {"bands": 2.0}), Vector3.ZERO, 10)
@@ -747,14 +803,16 @@ static func plant_model(kind: String) -> PlantRig:
 			_mound(root)
 			var hp := _shroom(sway, Color("#a389c8"), 0.2, 0.78, 0.16)
 			rig.head = hp
-			_shroom_eyes(hp, -0.13, 0.12, 0.05, 0.03)
-			box(hp, Vector3(0.02, 0.02, 0.07), Vector3(-0.155, 0.07, 0), toon(EYE, {"outline": false}))
+			_mushroom_spots(hp, 0.188, 0.2, 6, Color("#6b4a86"))
+			_shroom_eyes(hp, 0.13, 0.12, 0.05, 0.03)
+			box(hp, Vector3(0.02, 0.02, 0.07), Vector3(0.155, 0.07, 0), toon(EYE, {"outline": false}))
 
 		"sunshroom":
 			_mound(root)
 			var hs := _shroom(sway, Color("#f2c033"), 0.25, 0.72, 0.22, 0.1)
 			rig.head = hs
-			_shroom_eyes(hs, -0.17, 0.17, 0.06, 0.036)
+			_mushroom_spots(hs, 0.255, 0.25, 6, Color("#d98b28"))
+			_shroom_eyes(hs, 0.17, 0.17, 0.06, 0.036)
 			for i in range(8):
 				var a := TAU * float(i) / 8.0
 				var ray := box(hs, Vector3(0.02, 0.13, 0.05),
@@ -766,11 +824,13 @@ static func plant_model(kind: String) -> PlantRig:
 			_mound(root)
 			var hf := _shroom(sway, Color("#8d7fa8"), 0.3, 0.6, 0.28)
 			rig.head = hf
-			# wide muzzle on the front
-			cyl(hf, 0.17, 0.16, Vector3(-0.2, 0.24, 0), toon(Color("#b6a8c8"), {"bands": 2.0}), Vector3(0, 0, PI * 0.5), 12)
-			torus(hf, 0.1, 0.17, Vector3(-0.28, 0.24, 0), toon(Color("#6f6484"), {"bands": 2.0}), Vector3(0, 0, PI * 0.5))
-			cyl(hf, 0.12, 0.03, Vector3(-0.26, 0.24, 0), toon(Color("#3b3348"), {"outline": false}), Vector3(0, 0, PI * 0.5), 12)
-			_shroom_eyes(hf, -0.06, 0.46, 0.16, 0.048)
+			# wide muzzle on the front (+X, toward the zombies)
+			cyl(hf, 0.17, 0.16, Vector3(0.2, 0.24, 0), toon(Color("#b6a8c8"), {"bands": 2.0}), Vector3(0, 0, PI * 0.5), 12)
+			torus(hf, 0.1, 0.17, Vector3(0.28, 0.24, 0), toon(Color("#6f6484"), {"bands": 2.0}), Vector3(0, 0, PI * 0.5))
+			cyl(hf, 0.12, 0.03, Vector3(0.26, 0.24, 0), toon(Color("#3b3348"), {"outline": false}), Vector3(0, 0, PI * 0.5), 12)
+			_mushroom_spots(hf, 0.322, 0.3, 6, Color("#5b4a72"))
+			# eyes sit on the cap above the muzzle, not floating over the crown
+			_shroom_eyes(hf, 0.2, 0.34, 0.1, 0.042)
 
 		"hypnoshroom":
 			_mound(root)
@@ -782,7 +842,8 @@ static func plant_model(kind: String) -> PlantRig:
 				var rad := 0.05 + t * 0.19
 				ball(hh, 0.032, Vector3(cos(ang) * rad, 0.37 + t * 0.13, sin(ang) * rad),
 					toon(Color("#f6d6ea"), {"outline": false}), Vector3(1.0, 0.4, 1.0), 6, 4)
-			_shroom_eyes(hh, -0.19, 0.16, 0.06, 0.038, Color("#7a3a86"))
+			_mushroom_spots(hh, 0.258, 0.27, 5, Color("#a9538c"))
+			_shroom_eyes(hh, 0.19, 0.16, 0.06, 0.038, Color("#7a3a86"))
 			box(hh, Vector3(0.02, 0.022, 0.08), Vector3(-0.2, 0.11, 0), toon(Color("#7a3a86"), {"outline": false}))
 
 		"iceshroom":
@@ -793,7 +854,7 @@ static func plant_model(kind: String) -> PlantRig:
 				var a := TAU * float(i) / 6.0 + 0.3
 				cone(hi, 0.045, 0.16, Vector3(cos(a) * 0.22, 0.14, sin(a) * 0.22),
 					toon(ICE, {"glow": 0.3, "rim": 0.5}), Vector3(PI, 0, 0), 5)
-			_shroom_eyes(hi, -0.17, 0.19, 0.055, 0.034, Color("#2b5f7a"))
+			_shroom_eyes(hi, 0.17, 0.19, 0.055, 0.034, Color("#2b5f7a"))
 			box(hi, Vector3(0.02, 0.025, 0.075), Vector3(-0.19, 0.13, 0), toon(Color("#2b5f7a"), {"outline": false}))
 
 		"doomshroom":
@@ -804,20 +865,24 @@ static func plant_model(kind: String) -> PlantRig:
 				var a := TAU * float(i) / 6.0
 				box(hd, Vector3(0.03, 0.09, 0.03), Vector3(cos(a) * 0.3, 0.3, sin(a) * 0.3),
 					toon(Color("#6b4a80"), {"outline": false}), Vector3(0.4, -a, 0))
+			# the red glare sits on the +X side where the player can see it
 			for s in [-1, 1]:
-				ball(hd, 0.05, Vector3(-0.22, 0.3, 0.08 * s),
-					toon(Color("#ff5a3c"), {"glow": 1.8, "bands": 1.0, "outline": false}), Vector3(1.2, 0.7, 1.0), 8, 5)
-			box(hd, Vector3(0.02, 0.035, 0.16), Vector3(-0.25, 0.16, 0), toon(Color("#2a1a2e"), {"outline": false}))
+				ball(hd, 0.05, Vector3(0.28, 0.3, 0.08 * s),
+					toon(Color("#ff5a3c"), {"glow": 1.8, "bands": 1.0, "outline": false}), Vector3(1.4, 0.6, 1.0), 8, 5)
+				box(hd, Vector3(0.03, 0.03, 0.1), Vector3(0.29, 0.34, 0.09 * s),
+					toon(Color("#3a0f18"), {"outline": false}), Vector3(0, 0, -0.5 * s))
+			box(hd, Vector3(0.02, 0.045, 0.17), Vector3(0.3, 0.18, 0), toon(Color("#2a1a2e"), {"outline": false}))
 
 		"magnetshroom":
 			_mound(root)
 			var hm2 := _shroom(sway, Color("#9aa3a8"), 0.28, 0.62, 0.24, 0.05)
 			rig.head = hm2
-			torus(hm2, 0.1, 0.17, Vector3(0.0, 0.42, 0), toon(Color("#c0392b"), {"bands": 2.0}), Vector3(0, 0, PI * 0.5))
+			# the horseshoe magnet is the cap's crown, not a floating prop
+			torus(hm2, 0.12, 0.2, Vector3(0.0, 0.34, 0), toon(Color("#c0392b"), {"bands": 2.0}), Vector3(0, 0, PI * 0.5))
 			for s in [-1, 1]:
-				box(hm2, Vector3(0.06, 0.16, 0.06), Vector3(0.09, 0.5, 0.12 * s), toon(Color("#3d6fb0"), {"bands": 2.0}))
-				box(hm2, Vector3(0.06, 0.05, 0.06), Vector3(0.09, 0.6, 0.12 * s), toon(Color("#d8dde0"), {"bands": 1.0}))
-			_shroom_eyes(hm2, -0.2, 0.16, 0.06, 0.036, Color("#33404a"))
+				box(hm2, Vector3(0.07, 0.14, 0.07), Vector3(0.11, 0.42, 0.12 * s), toon(Color("#3d6fb0"), {"bands": 2.0}))
+				box(hm2, Vector3(0.075, 0.05, 0.075), Vector3(0.11, 0.51, 0.12 * s), toon(Color("#d8dde0"), {"bands": 1.0}))
+			_shroom_eyes(hm2, 0.2, 0.16, 0.06, 0.036, Color("#33404a"))
 
 		_:
 			_mound(root)
@@ -1258,22 +1323,32 @@ static func zombie_model(kind: String) -> ZombieRig:
 				Vector3(0.5, 0.7, 0.7), 20, 12)
 			var afro := toon(Color("#2c2228"), {"bands": 4.0, "outline": false,
 				"roughness": 0.82, "gloss": 0.04})
-			ball(rig.head, 0.235, Vector3(-0.038, 0.145, 0), afro, Vector3(1.12, 0.86, 1.12), 40, 26)
-			for i in range(4):
-				var a := float(i) * TAU / 4.0 + 0.4
-				ball(rig.head, 0.105, Vector3(-0.04 + cos(a) * 0.17, 0.11 + 0.045 * (i % 2),
-					sin(a) * 0.17), afro, Vector3(1.0, 0.9, 1.0), 28, 18)
 			if kind == "dancer":
+				ball(rig.head, 0.235, Vector3(-0.038, 0.145, 0), afro, Vector3(1.12, 0.86, 1.12), 40, 26)
+				for i in range(4):
+					var a := float(i) * TAU / 4.0 + 0.4
+					ball(rig.head, 0.105, Vector3(-0.04 + cos(a) * 0.17, 0.11 + 0.045 * (i % 2),
+						sin(a) * 0.17), afro, Vector3(1.0, 0.9, 1.0), 28, 18)
 				rig.arm_l.rotation.z = 2.0
 				rig.arm_r.rotation.z = 2.0
 			else:
+				# the backup dancer is the punk twin: mohawk + red headband
 				rig.root.scale = Vector3.ONE * 0.94
+				var hawk := toon(Color("#d9c04e"), {"bands": 3.0, "outline": false,
+					"roughness": 0.8, "gloss": 0.05})
+				for i in range(5):
+					var t := float(i) / 4.0
+					cone(rig.head, 0.042, 0.21 - 0.07 * absf(t - 0.5) * 2.0,
+						Vector3(-0.12 + 0.24 * t, 0.28, 0), hawk,
+						Vector3(0, 0, 0.62 - 1.24 * t), 6)
+				torus(rig.head, 0.188, 0.238, Vector3(-0.02, 0.175, 0),
+					toon(Color("#c0392b"), {"bands": 2.0, "outline": false}))
 
 		"gargantuar":
 			# he is scaled up whole; the telephone pole is the weapon
-			var brute := toon(Color("#4a5a48"), {"bands": 4.0, "outline": false,
+			var brute := toon(Color("#6d2f2a"), {"bands": 4.0, "outline": false,
 				"roughness": 0.95, "gloss": 0.015, "pigment": 0.045})
-			ball(rig.torso, 0.33, Vector3(0, 0.25, 0), brute, Vector3(0.84, 0.92, 0.98), 40, 26)
+			ball(rig.torso, 0.375, Vector3(0, 0.22, 0), brute, Vector3(0.88, 1.0, 1.0), 40, 26)
 			capsule(rig.torso, 0.3, 0.13, Vector3(0, 0.1, 0), brute, Vector3.ZERO, 36, 10)
 			ball(rig.head, 0.13, Vector3(0.1, -0.11, 0), skin_d, Vector3(1.2, 0.85, 1.05), 32, 20)
 			for s2 in [-1, 1]:
@@ -1282,12 +1357,14 @@ static func zombie_model(kind: String) -> ZombieRig:
 					Vector3(1.05, 0.78, 0.96), 20, 12)
 			rig.arm_l.rotation.z = 0.6
 			rig.arm_r.rotation.z = 0.6
-			var club := pivot(root, Vector3(0.3, 0.2, -0.34), "Club")
-			club.rotation.z = -0.42
+			var club := pivot(root, Vector3(0.34, 0.62, -0.3), "Club")
+			club.rotation.z = -0.95
 			cyl(club, 0.085, 2.0, Vector3(0, 0.85, 0), toon(Color("#8a6a48"), {"bands": 3.0, "outline": false, "roughness": 0.9}), Vector3.ZERO, 28)
 			for i in range(2):
 				box(club, Vector3(0.06, 0.05, 0.5), Vector3(0, 1.62 + i * 0.2, 0), toon(Color("#6b5038"), {"outline": false}))
 			cyl(club, 0.11, 0.1, Vector3(0, 0.02, 0), toon(Color("#5a4430"), {"outline": false}), Vector3.ZERO, 20)
+			# the whole brute is 1.55x the basic zombie � that is his whole point
+			root.scale = Vector3.ONE * 1.55
 
 	_collect(root, rig.parts)
 	return rig
@@ -1359,14 +1436,16 @@ static func lob_model(kind: String, butter: bool) -> Node3D:
 	return root
 
 
-## 一枚立着旋转的金币：主体 + 两面压纹 + 中心亮斑 + 微光。
+## 金币模型：一枚立起来的扁金片（圆柱绕 X 转 90°），正反两面各压一道暗色
+## 边环和一枚高光球，让旋转时能看出厚度与金属反光；最后挂一张附加发光贴片
+## 作为闪光，取用方通过 meta "spark" 拿到它并自行做旋转/脉冲。
 static func coin_model() -> Node3D:
 	var root := Node3D.new()
 	var gold := toon(Color("#f0c24a"), {"bands": 2.0, "rim": 0.42, "glow": 0.3})
 	var rim_d := toon(Color("#c89436"), {"bands": 2.0, "outline": false})
 	var shine := toon(Color("#ffe08a"), {"glow": 0.45, "outline": false})
 	cyl(root, 0.16, 0.05, Vector3.ZERO, gold, Vector3(PI * 0.5, 0, 0), 16)
-	# 两面的压纹圈，比币身厚一点点，所以读得出“铸出来的”
+	# 正反两面各一道凹进去的暗色边环，侧面看过去才有硬币的厚边
 	cyl(root, 0.118, 0.014, Vector3(0, 0, 0.026), rim_d, Vector3(PI * 0.5, 0, 0), 12)
 	cyl(root, 0.118, 0.014, Vector3(0, 0, -0.026), rim_d, Vector3(PI * 0.5, 0, 0), 12)
 	ball(root, 0.042, Vector3(0, 0, 0.034), shine, Vector3.ONE, 8, 6)

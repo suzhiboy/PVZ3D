@@ -1,0 +1,1372 @@
+{
+    "generated":  "2026-10-26T13:45:11",
+    "plants":  [
+                   {
+                       "kind":  "sunflower",
+                       "group":  "plant",
+                       "card":  "SunFlower.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  57,
+                                    "h":  46
+                                },
+                       "aspect":  1.239,
+                       "pixels":  1985,
+                       "colors":  [
+                                      {
+                                          "hex":  "#cc7733",
+                                          "share":  0.069
+                                      },
+                                      {
+                                          "hex":  "#bb6633",
+                                          "share":  0.068
+                                      },
+                                      {
+                                          "hex":  "#aa6622",
+                                          "share":  0.048
+                                      },
+                                      {
+                                          "hex":  "#995522",
+                                          "share":  0.046
+                                      },
+                                      {
+                                          "hex":  "#33aa44",
+                                          "share":  0.043
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "peashooter",
+                       "group":  "plant",
+                       "card":  "Peashooter.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  57,
+                                    "h":  46
+                                },
+                       "aspect":  1.239,
+                       "pixels":  1510,
+                       "colors":  [
+                                      {
+                                          "hex":  "#aacc33",
+                                          "share":  0.221
+                                      },
+                                      {
+                                          "hex":  "#33aa44",
+                                          "share":  0.069
+                                      },
+                                      {
+                                          "hex":  "#229944",
+                                          "share":  0.049
+                                      },
+                                      {
+                                          "hex":  "#55aa44",
+                                          "share":  0.037
+                                      },
+                                      {
+                                          "hex":  "#99cc33",
+                                          "share":  0.035
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "wallnut",
+                       "group":  "plant",
+                       "card":  "WallNut.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  13,
+                                    "y":  6,
+                                    "w":  47,
+                                    "h":  46
+                                },
+                       "aspect":  1.022,
+                       "pixels":  1705,
+                       "colors":  [
+                                      {
+                                          "hex":  "#886622",
+                                          "share":  0.196
+                                      },
+                                      {
+                                          "hex":  "#aa8822",
+                                          "share":  0.177
+                                      },
+                                      {
+                                          "hex":  "#cc9922",
+                                          "share":  0.116
+                                      },
+                                      {
+                                          "hex":  "#997722",
+                                          "share":  0.092
+                                      },
+                                      {
+                                          "hex":  "#bb9922",
+                                          "share":  0.053
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "snowpea",
+                       "group":  "plant",
+                       "card":  "SnowPea.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  59,
+                                    "h":  46
+                                },
+                       "aspect":  1.283,
+                       "pixels":  1511,
+                       "colors":  [
+                                      {
+                                          "hex":  "#33aa00",
+                                          "share":  0.125
+                                      },
+                                      {
+                                          "hex":  "#228800",
+                                          "share":  0.087
+                                      },
+                                      {
+                                          "hex":  "#33cc00",
+                                          "share":  0.054
+                                      },
+                                      {
+                                          "hex":  "#99eeff",
+                                          "share":  0.026
+                                      },
+                                      {
+                                          "hex":  "#227700",
+                                          "share":  0.026
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "repeater",
+                       "group":  "plant",
+                       "card":  "Repeater.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  54,
+                                    "h":  46
+                                },
+                       "aspect":  1.174,
+                       "pixels":  1529,
+                       "colors":  [
+                                      {
+                                          "hex":  "#aacc33",
+                                          "share":  0.17
+                                      },
+                                      {
+                                          "hex":  "#33aa44",
+                                          "share":  0.079
+                                      },
+                                      {
+                                          "hex":  "#44bb44",
+                                          "share":  0.065
+                                      },
+                                      {
+                                          "hex":  "#229944",
+                                          "share":  0.043
+                                      },
+                                      {
+                                          "hex":  "#55aa44",
+                                          "share":  0.032
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "cherrybomb",
+                       "group":  "plant",
+                       "card":  "CherryBomb.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  59,
+                                    "h":  46
+                                },
+                       "aspect":  1.283,
+                       "pixels":  1513,
+                       "colors":  [
+                                      {
+                                          "hex":  "#881111",
+                                          "share":  0.114
+                                      },
+                                      {
+                                          "hex":  "#991111",
+                                          "share":  0.095
+                                      },
+                                      {
+                                          "hex":  "#771111",
+                                          "share":  0.082
+                                      },
+                                      {
+                                          "hex":  "#aa1122",
+                                          "share":  0.055
+                                      },
+                                      {
+                                          "hex":  "#007733",
+                                          "share":  0.048
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "potatomine",
+                       "group":  "plant",
+                       "card":  "PotatoMine.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  81,
+                                    "h":  46
+                                },
+                       "aspect":  1.761,
+                       "pixels":  1843,
+                       "colors":  [
+                                      {
+                                          "hex":  "#bb8822",
+                                          "share":  0.107
+                                      },
+                                      {
+                                          "hex":  "#aa7722",
+                                          "share":  0.066
+                                      },
+                                      {
+                                          "hex":  "#996622",
+                                          "share":  0.053
+                                      },
+                                      {
+                                          "hex":  "#886622",
+                                          "share":  0.046
+                                      },
+                                      {
+                                          "hex":  "#775522",
+                                          "share":  0.042
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "threepeater",
+                       "group":  "plant",
+                       "card":  "Threepeater.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  10,
+                                    "y":  6,
+                                    "w":  55,
+                                    "h":  46
+                                },
+                       "aspect":  1.196,
+                       "pixels":  1310,
+                       "colors":  [
+                                      {
+                                          "hex":  "#33aa00",
+                                          "share":  0.099
+                                      },
+                                      {
+                                          "hex":  "#229900",
+                                          "share":  0.046
+                                      },
+                                      {
+                                          "hex":  "#114400",
+                                          "share":  0.035
+                                      },
+                                      {
+                                          "hex":  "#66aa00",
+                                          "share":  0.034
+                                      },
+                                      {
+                                          "hex":  "#77aa00",
+                                          "share":  0.027
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "chomper",
+                       "group":  "plant",
+                       "card":  "Chomper.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  50,
+                                    "h":  46
+                                },
+                       "aspect":  1.087,
+                       "pixels":  1091,
+                       "colors":  [
+                                      {
+                                          "hex":  "#773377",
+                                          "share":  0.069
+                                      },
+                                      {
+                                          "hex":  "#774488",
+                                          "share":  0.04
+                                      },
+                                      {
+                                          "hex":  "#663366",
+                                          "share":  0.035
+                                      },
+                                      {
+                                          "hex":  "#9966aa",
+                                          "share":  0.035
+                                      },
+                                      {
+                                          "hex":  "#441144",
+                                          "share":  0.032
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "lilypad",
+                       "group":  "plant",
+                       "card":  "LilyPad.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  76,
+                                    "h":  46
+                                },
+                       "aspect":  1.652,
+                       "pixels":  2992,
+                       "colors":  [
+                                      {
+                                          "hex":  "#88cc66",
+                                          "share":  0.29
+                                      },
+                                      {
+                                          "hex":  "#77bb55",
+                                          "share":  0.243
+                                      },
+                                      {
+                                          "hex":  "#88cc55",
+                                          "share":  0.128
+                                      },
+                                      {
+                                          "hex":  "#88bb55",
+                                          "share":  0.099
+                                      },
+                                      {
+                                          "hex":  "#99cc66",
+                                          "share":  0.039
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "tallnut",
+                       "group":  "plant",
+                       "card":  "TallNut.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  9,
+                                    "y":  6,
+                                    "w":  61,
+                                    "h":  39
+                                },
+                       "aspect":  1.564,
+                       "pixels":  2203,
+                       "colors":  [
+                                      {
+                                          "hex":  "#997711",
+                                          "share":  0.09
+                                      },
+                                      {
+                                          "hex":  "#886600",
+                                          "share":  0.073
+                                      },
+                                      {
+                                          "hex":  "#775500",
+                                          "share":  0.073
+                                      },
+                                      {
+                                          "hex":  "#886611",
+                                          "share":  0.067
+                                      },
+                                      {
+                                          "hex":  "#aa7711",
+                                          "share":  0.066
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "jalapeno",
+                       "group":  "plant",
+                       "card":  "Jalapeno.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  12,
+                                    "y":  6,
+                                    "w":  41,
+                                    "h":  46
+                                },
+                       "aspect":  0.891,
+                       "pixels":  926,
+                       "colors":  [
+                                      {
+                                          "hex":  "#dd1122",
+                                          "share":  0.162
+                                      },
+                                      {
+                                          "hex":  "#bb1122",
+                                          "share":  0.123
+                                      },
+                                      {
+                                          "hex":  "#ee1122",
+                                          "share":  0.119
+                                      },
+                                      {
+                                          "hex":  "#cc1122",
+                                          "share":  0.029
+                                      },
+                                      {
+                                          "hex":  "#dd2222",
+                                          "share":  0.027
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "squash",
+                       "group":  "plant",
+                       "card":  "Squash.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  10,
+                                    "y":  6,
+                                    "w":  58,
+                                    "h":  46
+                                },
+                       "aspect":  1.261,
+                       "pixels":  862,
+                       "colors":  [
+                                      {
+                                          "hex":  "#bbcc77",
+                                          "share":  0.436
+                                      },
+                                      {
+                                          "hex":  "#99aa44",
+                                          "share":  0.152
+                                      },
+                                      {
+                                          "hex":  "#aabb66",
+                                          "share":  0.072
+                                      },
+                                      {
+                                          "hex":  "#778844",
+                                          "share":  0.063
+                                      },
+                                      {
+                                          "hex":  "#ccdd77",
+                                          "share":  0.037
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "pumpkin",
+                       "group":  "plant",
+                       "card":  "PumpkinHead.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  69,
+                                    "h":  46
+                                },
+                       "aspect":  1.5,
+                       "pixels":  2889,
+                       "colors":  [
+                                      {
+                                          "hex":  "#dd8822",
+                                          "share":  0.061
+                                      },
+                                      {
+                                          "hex":  "#ee9922",
+                                          "share":  0.047
+                                      },
+                                      {
+                                          "hex":  "#bb7733",
+                                          "share":  0.045
+                                      },
+                                      {
+                                          "hex":  "#aa6633",
+                                          "share":  0.036
+                                      },
+                                      {
+                                          "hex":  "#aa6622",
+                                          "share":  0.028
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "kernelpult",
+                       "group":  "plant",
+                       "card":  "Kernelpult.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  57,
+                                    "h":  46
+                                },
+                       "aspect":  1.239,
+                       "pixels":  1450,
+                       "colors":  [
+                                      {
+                                          "hex":  "#ddcc11",
+                                          "share":  0.12
+                                      },
+                                      {
+                                          "hex":  "#ccbb11",
+                                          "share":  0.11
+                                      },
+                                      {
+                                          "hex":  "#bbaa11",
+                                          "share":  0.099
+                                      },
+                                      {
+                                          "hex":  "#eedd11",
+                                          "share":  0.095
+                                      },
+                                      {
+                                          "hex":  "#aa9911",
+                                          "share":  0.04
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "melonpult",
+                       "group":  "plant",
+                       "card":  "Melonpult.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  65,
+                                    "h":  46
+                                },
+                       "aspect":  1.413,
+                       "pixels":  2488,
+                       "colors":  [
+                                      {
+                                          "hex":  "#115500",
+                                          "share":  0.102
+                                      },
+                                      {
+                                          "hex":  "#226600",
+                                          "share":  0.069
+                                      },
+                                      {
+                                          "hex":  "#449911",
+                                          "share":  0.045
+                                      },
+                                      {
+                                          "hex":  "#338811",
+                                          "share":  0.039
+                                      },
+                                      {
+                                          "hex":  "#55bb11",
+                                          "share":  0.036
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "puffshroom",
+                       "group":  "plant",
+                       "card":  "PuffShroom.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  62,
+                                    "h":  46
+                                },
+                       "aspect":  1.348,
+                       "pixels":  1101,
+                       "colors":  [
+                                      {
+                                          "hex":  "#663366",
+                                          "share":  0.134
+                                      },
+                                      {
+                                          "hex":  "#442233",
+                                          "share":  0.103
+                                      },
+                                      {
+                                          "hex":  "#442244",
+                                          "share":  0.066
+                                      },
+                                      {
+                                          "hex":  "#885588",
+                                          "share":  0.064
+                                      },
+                                      {
+                                          "hex":  "#773377",
+                                          "share":  0.058
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "sunshroom",
+                       "group":  "plant",
+                       "card":  "SunShroom.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  13,
+                                    "y":  6,
+                                    "w":  58,
+                                    "h":  46
+                                },
+                       "aspect":  1.261,
+                       "pixels":  1354,
+                       "colors":  [
+                                      {
+                                          "hex":  "#eebb33",
+                                          "share":  0.07
+                                      },
+                                      {
+                                          "hex":  "#ffdd33",
+                                          "share":  0.049
+                                      },
+                                      {
+                                          "hex":  "#eecc33",
+                                          "share":  0.046
+                                      },
+                                      {
+                                          "hex":  "#ffee77",
+                                          "share":  0.045
+                                      },
+                                      {
+                                          "hex":  "#ffee88",
+                                          "share":  0.044
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "fumeshroom",
+                       "group":  "plant",
+                       "card":  "FumeShroom.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  52,
+                                    "h":  46
+                                },
+                       "aspect":  1.13,
+                       "pixels":  1149,
+                       "colors":  [
+                                      {
+                                          "hex":  "#551155",
+                                          "share":  0.18
+                                      },
+                                      {
+                                          "hex":  "#995588",
+                                          "share":  0.096
+                                      },
+                                      {
+                                          "hex":  "#663366",
+                                          "share":  0.077
+                                      },
+                                      {
+                                          "hex":  "#885588",
+                                          "share":  0.076
+                                      },
+                                      {
+                                          "hex":  "#662266",
+                                          "share":  0.069
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "hypnoshroom",
+                       "group":  "plant",
+                       "card":  "HypnoShroom.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  18,
+                                    "y":  12,
+                                    "w":  33,
+                                    "h":  30
+                                },
+                       "aspect":  1.1,
+                       "pixels":  244,
+                       "colors":  [
+                                      {
+                                          "hex":  "#55bbee",
+                                          "share":  0.275
+                                      },
+                                      {
+                                          "hex":  "#77aadd",
+                                          "share":  0.127
+                                      },
+                                      {
+                                          "hex":  "#885577",
+                                          "share":  0.111
+                                      },
+                                      {
+                                          "hex":  "#cc7799",
+                                          "share":  0.09
+                                      },
+                                      {
+                                          "hex":  "#99ffdd",
+                                          "share":  0.082
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "iceshroom",
+                       "group":  "plant",
+                       "card":  "IceShroom.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  65,
+                                    "h":  46
+                                },
+                       "aspect":  1.413,
+                       "pixels":  2054,
+                       "colors":  [
+                                      {
+                                          "hex":  "#66ccdd",
+                                          "share":  0.046
+                                      },
+                                      {
+                                          "hex":  "#55cccc",
+                                          "share":  0.044
+                                      },
+                                      {
+                                          "hex":  "#22aadd",
+                                          "share":  0.043
+                                      },
+                                      {
+                                          "hex":  "#1166aa",
+                                          "share":  0.043
+                                      },
+                                      {
+                                          "hex":  "#2288cc",
+                                          "share":  0.035
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "doomshroom",
+                       "group":  "plant",
+                       "card":  "DoomShroom.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  8,
+                                    "y":  6,
+                                    "w":  55,
+                                    "h":  46
+                                },
+                       "aspect":  1.196,
+                       "pixels":  1491,
+                       "colors":  [
+                                      {
+                                          "hex":  "#333333",
+                                          "share":  0.148
+                                      },
+                                      {
+                                          "hex":  "#444444",
+                                          "share":  0.129
+                                      },
+                                      {
+                                          "hex":  "#443333",
+                                          "share":  0.047
+                                      },
+                                      {
+                                          "hex":  "#554444",
+                                          "share":  0.046
+                                      },
+                                      {
+                                          "hex":  "#553333",
+                                          "share":  0.016
+                                      }
+                                  ]
+                   },
+                   {
+                       "kind":  "magnetshroom",
+                       "group":  "plant",
+                       "card":  "MagnetShroom.png",
+                       "card_size":  [
+                                         100,
+                                         120
+                                     ],
+                       "bbox":  {
+                                    "x":  11,
+                                    "y":  6,
+                                    "w":  51,
+                                    "h":  46
+                                },
+                       "aspect":  1.109,
+                       "pixels":  1155,
+                       "colors":  [
+                                      {
+                                          "hex":  "#772222",
+                                          "share":  0.222
+                                      },
+                                      {
+                                          "hex":  "#771111",
+                                          "share":  0.11
+                                      },
+                                      {
+                                          "hex":  "#661111",
+                                          "share":  0.093
+                                      },
+                                      {
+                                          "hex":  "#882222",
+                                          "share":  0.045
+                                      },
+                                      {
+                                          "hex":  "#444444",
+                                          "share":  0.033
+                                      }
+                                  ]
+                   }
+               ],
+    "zombies":  [
+                    {
+                        "kind":  "basic",
+                        "group":  "zombie",
+                        "card":  "Zombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  21,
+                                     "y":  6,
+                                     "w":  47,
+                                     "h":  46
+                                 },
+                        "aspect":  1.022,
+                        "pixels":  494,
+                        "colors":  [
+                                       {
+                                           "hex":  "#443311",
+                                           "share":  0.217
+                                       },
+                                       {
+                                           "hex":  "#333322",
+                                           "share":  0.055
+                                       },
+                                       {
+                                           "hex":  "#444433",
+                                           "share":  0.038
+                                       },
+                                       {
+                                           "hex":  "#99ffdd",
+                                           "share":  0.034
+                                       },
+                                       {
+                                           "hex":  "#334433",
+                                           "share":  0.03
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "cone",
+                        "group":  "zombie",
+                        "card":  "ConeheadZombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  18,
+                                     "y":  6,
+                                     "w":  37,
+                                     "h":  46
+                                 },
+                        "aspect":  0.804,
+                        "pixels":  722,
+                        "colors":  [
+                                       {
+                                           "hex":  "#443311",
+                                           "share":  0.102
+                                       },
+                                       {
+                                           "hex":  "#ffaa33",
+                                           "share":  0.08
+                                       },
+                                       {
+                                           "hex":  "#ff8822",
+                                           "share":  0.079
+                                       },
+                                       {
+                                           "hex":  "#ff9922",
+                                           "share":  0.05
+                                       },
+                                       {
+                                           "hex":  "#ff9933",
+                                           "share":  0.044
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "bucket",
+                        "group":  "zombie",
+                        "card":  "BucketheadZombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  17,
+                                     "y":  12,
+                                     "w":  41,
+                                     "h":  40
+                                 },
+                        "aspect":  1.025,
+                        "pixels":  397,
+                        "colors":  [
+                                       {
+                                           "hex":  "#443311",
+                                           "share":  0.217
+                                       },
+                                       {
+                                           "hex":  "#333333",
+                                           "share":  0.053
+                                       },
+                                       {
+                                           "hex":  "#99ffdd",
+                                           "share":  0.045
+                                       },
+                                       {
+                                           "hex":  "#775533",
+                                           "share":  0.043
+                                       },
+                                       {
+                                           "hex":  "#444444",
+                                           "share":  0.043
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "flag",
+                        "group":  "zombie",
+                        "card":  "FlagZombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  10,
+                                     "y":  6,
+                                     "w":  61,
+                                     "h":  46
+                                 },
+                        "aspect":  1.326,
+                        "pixels":  599,
+                        "colors":  [
+                                       {
+                                           "hex":  "#990000",
+                                           "share":  0.065
+                                       },
+                                       {
+                                           "hex":  "#444433",
+                                           "share":  0.058
+                                       },
+                                       {
+                                           "hex":  "#333333",
+                                           "share":  0.055
+                                       },
+                                       {
+                                           "hex":  "#443322",
+                                           "share":  0.037
+                                       },
+                                       {
+                                           "hex":  "#996644",
+                                           "share":  0.035
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "newspaper",
+                        "group":  "zombie",
+                        "card":  "NewspaperZombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  16,
+                                     "y":  6,
+                                     "w":  54,
+                                     "h":  46
+                                 },
+                        "aspect":  1.174,
+                        "pixels":  618,
+                        "colors":  [
+                                       {
+                                           "hex":  "#333333",
+                                           "share":  0.225
+                                       },
+                                       {
+                                           "hex":  "#444444",
+                                           "share":  0.087
+                                       },
+                                       {
+                                           "hex":  "#444433",
+                                           "share":  0.076
+                                       },
+                                       {
+                                           "hex":  "#334433",
+                                           "share":  0.05
+                                       },
+                                       {
+                                           "hex":  "#223322",
+                                           "share":  0.05
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "football",
+                        "group":  "zombie",
+                        "card":  "FootballZombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  11,
+                                     "y":  6,
+                                     "w":  81,
+                                     "h":  46
+                                 },
+                        "aspect":  1.761,
+                        "pixels":  1227,
+                        "colors":  [
+                                       {
+                                           "hex":  "#cc2222",
+                                           "share":  0.144
+                                       },
+                                       {
+                                           "hex":  "#dd2222",
+                                           "share":  0.107
+                                       },
+                                       {
+                                           "hex":  "#bb2222",
+                                           "share":  0.048
+                                       },
+                                       {
+                                           "hex":  "#662222",
+                                           "share":  0.039
+                                       },
+                                       {
+                                           "hex":  "#ee2222",
+                                           "share":  0.039
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "pole",
+                        "group":  "zombie",
+                        "card":  "PoleVaultingZombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  24,
+                                     "y":  6,
+                                     "w":  55,
+                                     "h":  46
+                                 },
+                        "aspect":  1.196,
+                        "pixels":  832,
+                        "colors":  [
+                                       {
+                                           "hex":  "#334433",
+                                           "share":  0.05
+                                       },
+                                       {
+                                           "hex":  "#444433",
+                                           "share":  0.049
+                                       },
+                                       {
+                                           "hex":  "#1166aa",
+                                           "share":  0.043
+                                       },
+                                       {
+                                           "hex":  "#333322",
+                                           "share":  0.036
+                                       },
+                                       {
+                                           "hex":  "#1199ee",
+                                           "share":  0.031
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "screendoor",
+                        "group":  "zombie",
+                        "card":  "ScreenDoorZombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  8,
+                                     "y":  6,
+                                     "w":  64,
+                                     "h":  46
+                                 },
+                        "aspect":  1.391,
+                        "pixels":  653,
+                        "colors":  [
+                                       {
+                                           "hex":  "#443311",
+                                           "share":  0.216
+                                       },
+                                       {
+                                           "hex":  "#444444",
+                                           "share":  0.058
+                                       },
+                                       {
+                                           "hex":  "#444433",
+                                           "share":  0.054
+                                       },
+                                       {
+                                           "hex":  "#333322",
+                                           "share":  0.046
+                                       },
+                                       {
+                                           "hex":  "#333333",
+                                           "share":  0.046
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "balloon",
+                        "group":  "zombie",
+                        "card":  "Balloonzombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  19,
+                                     "y":  6,
+                                     "w":  49,
+                                     "h":  46
+                                 },
+                        "aspect":  1.065,
+                        "pixels":  535,
+                        "colors":  [
+                                       {
+                                           "hex":  "#334444",
+                                           "share":  0.12
+                                       },
+                                       {
+                                           "hex":  "#334455",
+                                           "share":  0.079
+                                       },
+                                       {
+                                           "hex":  "#444433",
+                                           "share":  0.056
+                                       },
+                                       {
+                                           "hex":  "#333333",
+                                           "share":  0.05
+                                       },
+                                       {
+                                           "hex":  "#444444",
+                                           "share":  0.045
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "dancer",
+                        "group":  "zombie",
+                        "card":  "DancingZombie.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  8,
+                                     "y":  6,
+                                     "w":  60,
+                                     "h":  46
+                                 },
+                        "aspect":  1.304,
+                        "pixels":  1339,
+                        "colors":  [
+                                       {
+                                           "hex":  "#333333",
+                                           "share":  0.047
+                                       },
+                                       {
+                                           "hex":  "#990000",
+                                           "share":  0.028
+                                       },
+                                       {
+                                           "hex":  "#aa1111",
+                                           "share":  0.021
+                                       },
+                                       {
+                                           "hex":  "#444444",
+                                           "share":  0.016
+                                       },
+                                       {
+                                           "hex":  "#991111",
+                                           "share":  0.015
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "backup",
+                        "group":  "zombie",
+                        "card":  "BackupDancer.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  8,
+                                     "y":  6,
+                                     "w":  71,
+                                     "h":  46
+                                 },
+                        "aspect":  1.543,
+                        "pixels":  1495,
+                        "colors":  [
+                                       {
+                                           "hex":  "#665522",
+                                           "share":  0.047
+                                       },
+                                       {
+                                           "hex":  "#ddaa33",
+                                           "share":  0.041
+                                       },
+                                       {
+                                           "hex":  "#cc1122",
+                                           "share":  0.037
+                                       },
+                                       {
+                                           "hex":  "#334455",
+                                           "share":  0.033
+                                       },
+                                       {
+                                           "hex":  "#886622",
+                                           "share":  0.033
+                                       }
+                                   ]
+                    },
+                    {
+                        "kind":  "gargantuar",
+                        "group":  "zombie",
+                        "card":  "Gargantuar.png",
+                        "card_size":  [
+                                          100,
+                                          120
+                                      ],
+                        "bbox":  {
+                                     "x":  10,
+                                     "y":  6,
+                                     "w":  80,
+                                     "h":  46
+                                 },
+                        "aspect":  1.739,
+                        "pixels":  1468,
+                        "colors":  [
+                                       {
+                                           "hex":  "#554433",
+                                           "share":  0.095
+                                       },
+                                       {
+                                           "hex":  "#444433",
+                                           "share":  0.082
+                                       },
+                                       {
+                                           "hex":  "#333322",
+                                           "share":  0.063
+                                       },
+                                       {
+                                           "hex":  "#553333",
+                                           "share":  0.062
+                                       },
+                                       {
+                                           "hex":  "#334422",
+                                           "share":  0.057
+                                       }
+                                   ]
+                    }
+                ]
+}
