@@ -7,3 +7,21 @@ shots/
 *.log
 .vite/
 build/
+
+# internal dev notes & agent memory (not project source)
+.learnings/
+.workbuddy/
+
+# godot dev screenshots (large binaries, not source)
+godot/screenshots/
+
+# local screenshot output, reference images and profiling temp
+.godot-shots/
+.ref/
+.tmp/
+
+# model-reference render outputs (large binaries); keep only scripts + cards.json
+godot/tools/model-ref/out/render/
+godot/tools/model-ref/out/render2/
+godot/tools/model-ref/out/probe/
+godot/tools/model-ref/out/cards/
