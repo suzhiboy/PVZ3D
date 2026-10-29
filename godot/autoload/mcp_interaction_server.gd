@@ -68,7 +68,11 @@ func _ready() -> void:
 	_server = TCPServer.new()
 	var err: int = _server.listen(_port, "127.0.0.1")
 	if err != OK:
-		push_error("McpInteractionServer: Failed to listen on port %d, error: %d" % [_port, err])
+		# A second debug instance may already own the fixed editor port. The game
+		# remains playable; report the bridge as unavailable with a recovery hint
+		# instead of surfacing a fatal script error to the player.
+		push_warning("McpInteractionServer: port %d unavailable (error %d); MCP disabled for this instance. Set GODOT_BRIDGE_PORT to another free port." % [_port, err])
+		_server = null
 		return
 	print("McpInteractionServer: Listening on 127.0.0.1:%d" % _port)
 
@@ -151,8 +155,18 @@ func _handle_command(json_str: String) -> void:
 	_busy_since = Time.get_ticks_msec() / 1000.0
 	_current_id = req_id
 
-	var command: String = data.get("command", "")
-	var params: Dictionary = data.get("params", {})
+	var command_value: Variant = data.get("command", "")
+	if not command_value is String or str(command_value).strip_edges() == "":
+		_send_response({"error": "Expected a non-empty string command", "id": req_id})
+		return
+	var command: String = str(command_value)
+	var params_value: Variant = data.get("params", {})
+	if params_value == null:
+		params_value = {}
+	if not params_value is Dictionary:
+		_send_response({"error": "params must be a JSON object", "id": req_id})
+		return
+	var params: Dictionary = params_value
 
 	match command:
 		# Async commands (use await)
