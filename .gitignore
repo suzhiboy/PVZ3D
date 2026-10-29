@@ -14,6 +14,7 @@ build/
 
 # godot dev screenshots (large binaries, not source)
 godot/screenshots/
+.godot-user/
 
 # local screenshot output, reference images and profiling temp
 .godot-shots/

@@ -1,3 +1,12 @@
 .godot/
 export/
 *.translation
+
+# Local captures and profiling artifacts. The project source stays portable
+# when the Godot folder is copied or opened as its own repository.
+screenshots/
+.bench*.png
+tools/model-ref/out/render/
+tools/model-ref/out/render2/
+tools/model-ref/out/probe/
+tools/model-ref/out/cards/
