@@ -328,7 +328,7 @@ func _exit_tree() -> void:
 
 func sfx(name: String, db := 0.0, pitch := 1.0) -> void:
 	var s: AudioStream = _sfx.get(name)
-	if s == null:
+	if s == null or _p2d.is_empty():
 		return
 	var p := _p2d[_i2d % _p2d.size()]
 	_i2d += 1
@@ -340,7 +340,7 @@ func sfx(name: String, db := 0.0, pitch := 1.0) -> void:
 
 func sfx_at(name: String, pos: Vector3, db := -4.0, pitch := 1.0) -> void:
 	var s: AudioStream = _sfx.get(name)
-	if s == null:
+	if s == null or _p3d.is_empty():
 		return
 	var p := _p3d[_i3d % _p3d.size()]
 	_i3d += 1
@@ -352,6 +352,8 @@ func sfx_at(name: String, pos: Vector3, db := -4.0, pitch := 1.0) -> void:
 
 
 func set_wind(on: bool) -> void:
+	if _wind == null:
+		return
 	if on and not _wind.playing:
 		_wind.play()
 	elif not on and _wind.playing:
@@ -364,10 +366,24 @@ func _load_save() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SAVE_PATH) != OK:
 		return
-	for k in save.keys():
-		save[k] = cfg.get_value("save", k, save[k])
+	for k in ["stars", "best", "picks", "upgrades"]:
+		var raw = cfg.get_value("save", k, save[k])
+		if raw is Dictionary:
+			save[k] = raw
+	for k in ["unlocked", "endless_best", "endless_runs", "coins"]:
+		var raw = cfg.get_value("save", k, save[k])
+		if raw is int or raw is float:
+			save[k] = maxi(0, int(raw))
+	var seen_raw = cfg.get_value("save", "seen", save["seen"])
+	if seen_raw is Array:
+		save["seen"] = seen_raw
 	for k in settings.keys():
-		settings[k] = cfg.get_value("settings", k, settings[k])
+		var raw = cfg.get_value("settings", k, settings[k])
+		if k == "invert_y" or k == "shake":
+			if raw is bool:
+				settings[k] = raw
+		elif raw is int or raw is float:
+			settings[k] = clampf(float(raw), 0.0, 1.0) if k != "sensitivity" else clampf(float(raw), 0.0005, 0.01)
 
 
 func persist() -> void:
@@ -376,7 +392,9 @@ func persist() -> void:
 		cfg.set_value("save", k, save[k])
 	for k in settings.keys():
 		cfg.set_value("settings", k, settings[k])
-	cfg.save(SAVE_PATH)
+	var err := cfg.save(SAVE_PATH)
+	if err != OK:
+		push_warning("Could not save profile to %s (error %d)" % [SAVE_PATH, err])
 
 
 func stars_for(id: String) -> int:
