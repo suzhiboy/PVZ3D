@@ -206,8 +206,8 @@ func _walk_test(mode: String) -> void:
 	get_tree().quit()
 
 
-## Logic check for the loadout screen: it must refuse to drop a required seed,
-## refuse to overfill, and persist exactly what was picked.
+## Logic check for the loadout screen: every card can be removed, overfilling is
+## refused, and the selected belt is persisted exactly as picked.
 func _run_test(which: String) -> void:
 	match which:
 		"choice":
@@ -256,7 +256,7 @@ func _flow_test() -> void:
 	chooser._confirm()
 	print("[flow] confirm -> mode=", mode, " belt=", match_ref.seeds, " cards=", hud._cards.size(), " picked=", picked)
 
-	# endless has a 12-seed default but only 9 slots — the belt must be capped
+	# endless has more default cards than slots — the belt must be capped
 	_choose_level("endless")
 	print("[flow] endless chooser=", chooser.root.visible, " slots=", chooser.slots,
 		" picks=", chooser.picks.size())
@@ -271,7 +271,7 @@ func _test_zombie(m: Match, kind: String, lane: int) -> ZombieUnit:
 	return m.zombies[m.zombies.size() - 1]
 
 
-## Behaviour check for the seven non-shooter newcomers + the two pults.
+## Behaviour check for the original plants plus the PVZ2 newcomers.
 func _plants_test() -> void:
 	var belt := ["sunflower", "peashooter", "pumpkin", "kernelpult", "melonpult", "puffshroom",
 		"sunshroom", "fumeshroom", "hypnoshroom", "iceshroom", "doomshroom", "magnetshroom"]
@@ -383,7 +383,54 @@ func _plants_test() -> void:
 	print("[plants] pults -> hp=", int(lob_target.hp), "/", int(lob_target.max_hp),
 		" armor=", int(lob_target.armor), " lobs_alive=", m.lobs.size())
 
-	# 9) digging a hypno-shroom must not charm anything
+	# 9) PVZ2 newcomers: melee, three-lane flame, piercing beam and balloon counter
+	m.cooldowns.clear()
+	m.sun = 9000
+	var bonk_z := _test_zombie(m, "basic", 0)
+	bonk_z.body_x = m.cell_center(Vector2i(4, 0)).x + 0.62
+	bonk_z.global_position.x = bonk_z.body_x
+	m.plant_at(Vector2i(4, 0), "bonkchoy")
+	var bonk_hp := bonk_z.hp
+	for i in range(90):
+		m.update(1.0 / 60.0)
+	print("[plants] bonkchoy -> damage=", int(bonk_hp - bonk_z.hp))
+
+	m.cooldowns.clear()
+	var flame_z := _test_zombie(m, "basic", 1)
+	flame_z.body_x = m.cell_center(Vector2i(6, 1)).x
+	flame_z.global_position.x = flame_z.body_x
+	var flame_adj := _test_zombie(m, "basic", 2)
+	flame_adj.body_x = m.cell_center(Vector2i(6, 2)).x
+	flame_adj.global_position.x = flame_adj.body_x
+	m.plant_at(Vector2i(4, 1), "snapdragon")
+	var flame_hp := flame_z.hp + flame_adj.hp
+	for i in range(120):
+		m.update(1.0 / 60.0)
+	print("[plants] snapdragon -> damage=", int(flame_hp - flame_z.hp - flame_adj.hp))
+
+	m.cooldowns.clear()
+	var beam_a := _test_zombie(m, "basic", 3)
+	beam_a.body_x = m.cell_center(Vector2i(7, 3)).x
+	beam_a.global_position.x = beam_a.body_x
+	var beam_b := _test_zombie(m, "basic", 3)
+	beam_b.body_x = m.cell_center(Vector2i(5, 3)).x
+	beam_b.global_position.x = beam_b.body_x
+	m.plant_at(Vector2i(2, 3), "laserbean")
+	var beam_hp := beam_a.hp + beam_b.hp
+	for i in range(180):
+		m.update(1.0 / 60.0)
+	print("[plants] laserbean -> piercing_damage=", int(beam_hp - beam_a.hp - beam_b.hp))
+
+	m.cooldowns.clear()
+	var balloon := _test_zombie(m, "balloon", 4)
+	balloon.body_x = m.cell_center(Vector2i(7, 4)).x
+	balloon.global_position.x = balloon.body_x
+	m.plant_at(Vector2i(2, 4), "blover")
+	for i in range(70):
+		m.update(1.0 / 60.0)
+	print("[plants] blover -> balloon_removed=", balloon.dead or balloon.dying > 0.0)
+
+	# 10) digging a hypno-shroom must not charm anything
 	m.cooldowns.clear()
 	m.sun = 9000
 	var dcell := Vector2i(2, 3)
@@ -771,21 +818,22 @@ func _coins_test() -> void:
 func _choice_test() -> void:
 	menu.show_menu(true)
 	chooser.open("front-1")
-	print("[choice] open picks=", chooser.picks, " slots=", chooser.slots, " must=", chooser.must)
+	print("[choice] open picks=", chooser.picks, " slots=", chooser.slots)
 	chooser._on_tile_tapped("sunflower")
-	print("[choice] tap required sunflower -> ", chooser.picks)
+	print("[choice] remove sunflower -> ", chooser.picks, " removed=", not chooser.picks.has("sunflower"))
 	chooser._on_tile_tapped("lilypad")
 	print("[choice] tap lilypad -> ", chooser.picks)
 	chooser._on_tile_tapped("lilypad")
 	print("[choice] tap lilypad again -> ", chooser.picks)
 	chooser._on_tile_tapped("wallnut")
+	chooser._on_tile_tapped("cherrybomb")
 	chooser._on_tile_tapped("snowpea")
 	chooser._on_tile_tapped("squash")
 	print("[choice] fill -> ", chooser.picks)
 	chooser._on_tile_tapped("jalapeno")
 	print("[choice] overfill attempt -> ", chooser.picks)
 	chooser._on_slot_tapped(0)
-	print("[choice] remove required slot 0 -> ", chooser.picks)
+	print("[choice] remove slot 0 -> ", chooser.picks)
 	chooser._on_slot_tapped(2)
 	print("[choice] remove slot 2 -> ", chooser.picks)
 	chooser._randomise()
@@ -797,6 +845,14 @@ func _choice_test() -> void:
 	print("[choice] level belt=", match_ref.seeds if match_ref != null else "none",
 		" cards=", hud._cards.size() if hud != null else -1,
 		" chooser_visible=", chooser.root.visible)
+	var saved_loadout: Array = App.picks_for("front-1")
+	chooser.open("front-1")
+	chooser.picks = ["wallnut"]
+	chooser._refresh()
+	chooser._confirm()
+	print("[choice] custom belt=", match_ref.seeds, " forced_sunflower=", match_ref.seeds.has("sunflower"))
+	App.set_picks("front-1", saved_loadout)
+	App.persist()
 	get_tree().quit()
 
 
@@ -1293,6 +1349,7 @@ func _decorate_menu_garden() -> void:
 		[2, 1, "peashooter"], [2, 3, "peashooter"], [3, 4, "snowpea"],
 		[3, 0, "repeater"], [3, 2, "wallnut"], [4, 1, "threepeater"],
 		[4, 3, "tallnut"], [5, 2, "chomper"], [2, 4, "potatomine"],
+		[5, 0, "bonkchoy"], [5, 4, "snapdragon"], [6, 1, "laserbean"], [6, 3, "blover"],
 	]
 	for s in spots:
 		var pos := Vector3(Data.col_x(Data.FRONT, int(s[0])), 0.03, Data.row_z(Data.FRONT, int(s[1])))
@@ -1323,6 +1380,9 @@ func _continue() -> void:
 
 
 func _start_level(id: String, picks: Array = []) -> void:
+	if not Data.level_exists(id):
+		push_warning("Unknown level '%s'; falling back to front-1" % id)
+		id = "front-1"
 	current_id = id
 	var level := Data.level(id)
 	var loadout: Array = picks.duplicate() if picks.size() > 0 else App.picks_for(id)

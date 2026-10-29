@@ -137,6 +137,26 @@ const PLANTS := {
 		"shot": 25, "cadence": 1.3, "range": 3.4,
 		"hint": "免费的短程射手，打得近但不要钱", "tags": "夜行 · 短程",
 	},
+	"bonkchoy": {
+		"name": "菜问", "cost": 150, "recharge": 7.5, "hp": 450,
+		"melee": 65, "cadence": 0.85, "range": 1.9,
+		"hint": "近距离连续挥拳，专门处理贴脸的僵尸", "tags": "近战 · 高爆发",
+	},
+	"snapdragon": {
+		"name": "火龙草", "cost": 125, "recharge": 9.0, "hp": 300,
+		"flame": 36, "cadence": 1.8, "range": 3.3,
+		"hint": "喷出短程扇形火焰，同时灼烧本行和相邻两行", "tags": "多行 · 近程",
+	},
+	"laserbean": {
+		"name": "激光豆", "cost": 200, "recharge": 10.0, "hp": 300,
+		"beam": 72, "cadence": 2.4,
+		"hint": "发射贯穿整行的激光，后排僵尸也无处可躲", "tags": "贯穿 · 输出",
+	},
+	"blover": {
+		"name": "三叶草", "cost": 50, "recharge": 15.0, "hp": 250,
+		"one_shot": true,
+		"hint": "强风吹散全场气球僵尸，使用后立即消失", "tags": "一次性 · 反制气球",
+	},
 	"sunshroom": {
 		"name": "阳光菇", "cost": 25, "recharge": 8.0, "hp": 300,
 		"hint": "先产小阳光，长大以后产出更多", "tags": "夜行 · 产阳光",
@@ -212,6 +232,7 @@ const ZOMBIES := {
 const SEED_ORDER := [
 	"sunflower", "sunshroom",
 	"peashooter", "repeater", "threepeater", "snowpea", "puffshroom", "fumeshroom",
+	"bonkchoy", "snapdragon", "laserbean", "blover",
 	"kernelpult", "melonpult",
 	"wallnut", "tallnut", "pumpkin",
 	"potatomine", "squash", "chomper", "hypnoshroom", "magnetshroom", "iceshroom",
@@ -231,7 +252,6 @@ const LEVELS := [
 		"par": 165.0,
 		"seeds": ["sunflower", "peashooter", "wallnut", "potatomine"],
 		"slots": 5,
-		"must": ["sunflower", "peashooter"],
 		"waves": [
 			{"at": 18.0, "label": "僵尸出现了", "spawns": [{"kind": "basic"}]},
 			{"at": 45.0, "label": "第二只", "spawns": [{"kind": "basic", "count": 2, "gap": 4.0}]},
@@ -251,9 +271,8 @@ const LEVELS := [
 		"sun": 150,
 		"sky_sun": 10.0,
 		"par": 195.0,
-		"seeds": ["sunflower", "peashooter", "wallnut", "snowpea", "repeater", "kernelpult", "cherrybomb", "jalapeno"],
-		"slots": 8,
-		"must": ["sunflower", "peashooter", "wallnut"],
+		"seeds": ["sunflower", "peashooter", "wallnut", "snowpea", "repeater", "kernelpult", "cherrybomb", "jalapeno", "bonkchoy", "snapdragon"],
+		"slots": 9,
 		"waves": [
 			{"at": 14.0, "label": "僵尸出现了", "spawns": [{"kind": "basic", "count": 2, "gap": 5.0}]},
 			{"at": 40.0, "label": "路障僵尸", "spawns": [{"kind": "cone", "count": 2, "gap": 5.0}]},
@@ -277,9 +296,8 @@ const LEVELS := [
 		"sun": 175,
 		"sky_sun": 9.0,
 		"par": 210.0,
-		"seeds": ["sunflower", "peashooter", "lilypad", "threepeater", "chomper", "snowpea", "pumpkin", "melonpult", "wallnut"],
+		"seeds": ["sunflower", "peashooter", "lilypad", "threepeater", "laserbean", "snapdragon", "chomper", "snowpea", "pumpkin", "melonpult", "wallnut", "blover"],
 		"slots": 9,
-		"must": ["sunflower", "peashooter", "lilypad"],
 		"waves": [
 			{"at": 18.0, "label": "僵尸出现了", "spawns": [{"kind": "basic", "count": 2, "gap": 6.0}]},
 			{"at": 48.0, "label": "路障僵尸", "spawns": [{"kind": "cone"}, {"kind": "basic"}]},
@@ -306,9 +324,8 @@ const LEVELS := [
 		"sun": 125,
 		"sky_sun": 6.5,
 		"par": 230.0,
-		"seeds": ["sunflower", "sunshroom", "peashooter", "repeater", "fumeshroom", "magnetshroom", "wallnut", "iceshroom", "doomshroom"],
+		"seeds": ["sunflower", "sunshroom", "peashooter", "laserbean", "snapdragon", "magnetshroom", "wallnut", "iceshroom", "doomshroom", "blover"],
 		"slots": 9,
-		"must": ["sunflower", "peashooter"],
 		"waves": [
 			{"at": 20.0, "label": "僵尸出现了", "spawns": [{"kind": "basic", "count": 2, "gap": 4.0}]},
 			{"at": 50.0, "label": "路障僵尸", "spawns": [{"kind": "cone", "count": 2, "gap": 3.0}]},
@@ -337,10 +354,9 @@ const ENDLESS := {
 	"sun": 250,
 	"sky_sun": 8.0,
 	"par": 0.0,
-	"seeds": ["sunflower", "peashooter", "wallnut", "repeater", "snowpea", "kernelpult",
+	"seeds": ["sunflower", "peashooter", "bonkchoy", "snapdragon", "laserbean", "blover", "wallnut", "repeater", "snowpea", "kernelpult",
 		"melonpult", "pumpkin", "cherrybomb", "jalapeno", "threepeater", "tallnut"],
 	"slots": 9,
-	"must": ["sunflower", "peashooter"],
 	"waves": [],
 	"endless": true,
 	"first_wave": 18.0,
@@ -417,6 +433,15 @@ static func level(id: String) -> Dictionary:
 		if l["id"] == id:
 			return l
 	return LEVELS[0]
+
+
+static func level_exists(id: String) -> bool:
+	if id == "endless":
+		return true
+	for l in LEVELS:
+		if str(l.get("id", "")) == id:
+			return true
+	return false
 
 
 static func yard(name: String) -> Dictionary:

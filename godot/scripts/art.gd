@@ -493,6 +493,75 @@ static func plant_model(kind: String) -> PlantRig:
 			# the middle head is the rig's head; the other two stay in extra[]
 			rig.head = rig.extra[1]
 
+		"bonkchoy":
+			_mound(root)
+			_stalk(sway, 0.42, Color("#3e8738"))
+			_leaf(sway, 0.16, 0.7, 1.15)
+			_leaf(sway, 0.13, -0.72, 1.1)
+			var hb := pivot(sway, Vector3(0.02, 0.63, 0), "Head")
+			rig.head = hb
+			var bmat := toon(Color("#6bb84c"), {"bands": 3.0, "rim": 0.3})
+			ball(hb, 0.25, Vector3(0, 0.12, 0), bmat, Vector3(1.0, 1.15, 0.9), 14, 10)
+			for s in [-1, 1]:
+				var fist := pivot(hb, Vector3(0.18, 0.12, 0.27 * float(s)), "Fist%d" % s)
+				ball(fist, 0.12, Vector3(0.10, 0.0, 0), toon(Color("#8bd45b"), {"bands": 2.0}), Vector3(1.15, 0.95, 0.95), 10, 7)
+				for i in range(3):
+					ball(fist, 0.025, Vector3(0.18, 0.05 + i * 0.035, -0.07 + i * 0.07),
+						toon(Color("#4d9436"), {"outline": false}), Vector3.ONE, 6, 4)
+			for s in [-1, 1]:
+				ball(hb, 0.045, Vector3(0.23, 0.18, 0.11 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(hb, 0.022, Vector3(0.26, 0.18, 0.11 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+			box(hb, Vector3(0.03, 0.025, 0.14), Vector3(0.25, 0.08, 0), toon(EYE, {"outline": false}))
+
+		"snapdragon":
+			_mound(root)
+			_stalk(sway, 0.34, Color("#3d8434"))
+			_leaf(sway, 0.12, 0.75, 1.2)
+			_leaf(sway, 0.12, -0.76, 1.18)
+			var hdg := pivot(sway, Vector3(0.04, 0.56, 0), "Head")
+			rig.head = hdg
+			var dragon := toon(Color("#e87936"), {"bands": 3.0, "rim": 0.3, "glow": 0.05})
+			var dragon_dark := toon(Color("#b5482b"), {"bands": 2.0})
+			ball(hdg, 0.25, Vector3(-0.02, 0.16, 0), dragon, Vector3(1.0, 1.05, 0.9), 14, 10)
+			var snout := pivot(hdg, Vector3(0.16, 0.18, 0), "Snout")
+			ball(snout, 0.16, Vector3(0.12, 0.0, 0), dragon_dark, Vector3(1.25, 0.75, 0.85), 12, 8)
+			box(snout, Vector3(0.03, 0.05, 0.18), Vector3(0.27, -0.03, 0), toon(Color("#3c2117"), {"outline": false}))
+			for s in [-1, 1]:
+				ball(hdg, 0.045, Vector3(0.20, 0.34, 0.12 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(hdg, 0.022, Vector3(0.23, 0.34, 0.12 * s), toon(Color("#55241c"), {"outline": false}), Vector3.ONE, 6, 4)
+			for s in [-1, 1]:
+				cone(hdg, 0.045, 0.19, Vector3(-0.10, 0.50, 0.14 * s), toon(Color("#f0a23c"), {"bands": 2.0}), Vector3(0.2, 0, 0.25 * s), 6)
+
+		"laserbean":
+			_mound(root)
+			_stalk(sway, 0.38, Color("#3d873c"))
+			_leaf(sway, 0.14, 0.75, 1.15)
+			_leaf(sway, 0.12, -0.72, 1.08)
+			var hl := pivot(sway, Vector3(0.04, 0.66, 0), "Head")
+			rig.head = hl
+			var laser_mat := toon(Color("#60d8a2"), {"bands": 3.0, "rim": 0.35, "glow": 0.16})
+			ball(hl, 0.24, Vector3(-0.04, 0.02, 0), laser_mat, Vector3(1.35, 0.98, 0.92), 16, 10)
+			tube(hl, 0.11, 0.15, 0.3, Vector3(0.22, 0.04, 0), laser_mat, Vector3(0, 0, -PI * 0.5), 14)
+			ball(hl, 0.08, Vector3(0.39, 0.04, 0), additive(Color(0.35, 1.0, 0.8, 0.62)), Vector3.ONE, 10, 7)
+			for s in [-1, 1]:
+				ball(hl, 0.045, Vector3(0.08, 0.14, 0.17 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(hl, 0.020, Vector3(0.11, 0.14, 0.19 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+
+		"blover":
+			_mound(root)
+			var fan := pivot(sway, Vector3(0, 0.38, 0), "Head")
+			rig.head = fan
+			var leaf_mat := toon(Color("#6fcf5c"), {"bands": 3.0, "rim": 0.28})
+			for i in range(5):
+				var ang := -0.9 + float(i) * 0.45
+				var blade := ball(fan, 0.11, Vector3(0.02, 0.28 + sin(ang) * 0.08, cos(ang) * 0.26),
+					leaf_mat, Vector3(0.48, 2.6, 0.72), 8, 5)
+				blade.rotation.z = ang * 0.55
+			ball(fan, 0.18, Vector3(0.10, 0.27, 0), toon(Color("#3f8d3b"), {"bands": 2.0}), Vector3(0.7, 1.0, 0.85), 10, 7)
+			for s in [-1, 1]:
+				ball(fan, 0.04, Vector3(0.25, 0.31, 0.08 * s), toon(WHITE, {"outline": false}), Vector3.ONE, 8, 6)
+				ball(fan, 0.018, Vector3(0.275, 0.31, 0.09 * s), toon(EYE, {"outline": false}), Vector3.ONE, 6, 4)
+
 		"wallnut", "tallnut":
 			var tall := kind == "tallnut"
 			var sy := 0.72 if tall else 0.55

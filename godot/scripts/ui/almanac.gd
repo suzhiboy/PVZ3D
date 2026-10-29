@@ -239,6 +239,14 @@ func _select(kind: String) -> void:
 			lines.append("阳光 %d · 冷却 %.0f 秒 · 生命 %d" % [int(d["cost"]), float(d["recharge"]), int(d["hp"])])
 			if d.has("shot"):
 				lines.append("伤害 %d · 节奏 %.2f 秒" % [int(d["shot"]), float(d.get("cadence", 1.4))])
+			if d.has("melee"):
+				lines.append("近战伤害 %d · 范围 %.1f 格" % [int(d["melee"]), float(d.get("range", 1.9))])
+			if d.has("flame"):
+				lines.append("火焰伤害 %d · 覆盖三行" % int(d["flame"]))
+			if d.has("beam"):
+				lines.append("贯穿伤害 %d · 整行命中" % int(d["beam"]))
+			if bool(d.get("one_shot", false)):
+				lines.append("一次性植物")
 			if d.has("freeze"):
 				lines.append("减速 %.1f 秒" % float(d["freeze"]))
 		_body.text = "\n".join(lines)

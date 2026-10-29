@@ -72,10 +72,7 @@ var _shake_cb: Callable
 func setup(p_level: Dictionary, p_player: PlayerController, p_world: WorldBuilder,
 		shake_cb: Callable = Callable(), p_seeds: Array = []) -> void:
 	level = p_level
-	seeds = p_seeds.duplicate() if p_seeds.size() > 0 else Array(level["seeds"])
-	var slot_cap := int(level.get("slots", 9))
-	if seeds.size() > slot_cap:
-		seeds = seeds.slice(0, slot_cap)
+	seeds = _normalise_seeds(level, p_seeds)
 	yard = Data.yard(str(level["yard"]))
 	yard_name = str(yard["id"])
 	rows = int(yard["rows"])
@@ -102,6 +99,22 @@ func setup(p_level: Dictionary, p_player: PlayerController, p_world: WorldBuilde
 	player.set_water_bounds(pool)
 
 	sun_changed.emit(sun)
+
+
+func _normalise_seeds(p_level: Dictionary, requested: Array) -> Array:
+	var slot_cap := clampi(int(p_level.get("slots", 9)), 1, 9)
+	var source: Array = requested if requested.size() > 0 else Array(p_level.get("seeds", []))
+	var out: Array = []
+	for kind in source:
+		var key := str(kind)
+		if Data.PLANTS.has(key) and not out.has(key) and out.size() < slot_cap:
+			out.append(key)
+	if out.is_empty():
+		for kind in Array(p_level.get("seeds", [])):
+			var key := str(kind)
+			if Data.PLANTS.has(key) and not out.has(key) and out.size() < slot_cap:
+				out.append(key)
+	return out.slice(0, slot_cap)
 
 
 # --- setup -----------------------------------------------------------------
@@ -205,7 +218,7 @@ func plant_y(cell: Vector2i) -> float:
 func can_plant(cell: Vector2i, kind: String) -> bool:
 	if cell.x < 0 or cell.x >= cols or cell.y < 0 or cell.y >= rows:
 		return false
-	if kind == "":
+	if kind == "" or not Data.PLANTS.has(kind):
 		return false
 	if craters.has(cell):
 		return false
@@ -590,10 +603,99 @@ func fume_cone(pos: Vector3, lane: int, radius: float, damage: float) -> void:
 		add_child(p)
 		var tw := create_tween()
 		tw.tween_property(p, "scale", Vector3.ONE * (1.05 + i * 0.15), 0.42)
-		tw.parallel().tween_property(p, "transparency", 1.0, 0.5)
+		tw.parallel().tween_property(p, "scale", Vector3.ZERO, 0.5)
 		tw.tween_callback(p.queue_free)
 	if hit > 0:
 		App.sfx_at("hit", pos, -14.0, 0.7)
+
+
+## 火龙草：短距离扇形火焰，同时覆盖本行和相邻两行。
+func flame_cone(pos: Vector3, lane: int, radius: float, damage: float) -> int:
+	var attack := -dir
+	var hit := 0
+	for rr in range(maxi(0, lane - 1), mini(rows, lane + 2)):
+		for z in zombies:
+			if not is_instance_valid(z) or z.dead or z.dying > 0.0 or z.charmed or z.lane != rr:
+				continue
+			var ahead: float = (z.global_position.x - pos.x) * attack
+			if ahead < 0.0 or ahead > radius:
+				continue
+			z.damage(damage)
+			_burst(z.global_position + Vector3(0, 0.85, 0), Color("#ffab54"), 7, 1.8, 0.06)
+			hit += 1
+	for rr in range(maxi(0, lane - 1), mini(rows, lane + 2)):
+		var puff := Art.puff(Color(1.0, 0.45, 0.18, 0.82))
+		puff.position = pos + Vector3(attack * (0.35 + radius * 0.22), 0.72, (rr - lane) * Data.TILE * 0.42)
+		puff.scale = Vector3(0.22, 0.22, 0.22)
+		add_child(puff)
+		var tw := create_tween()
+		tw.tween_property(puff, "scale", Vector3.ONE * 0.68, 0.28)
+		tw.parallel().tween_property(puff, "scale", Vector3.ZERO, 0.34)
+		tw.tween_callback(puff.queue_free)
+	if hit > 0:
+		App.sfx_at("hit", pos, -10.0, 1.15)
+		if player != null:
+			player.add_shake(0.08)
+	return hit
+
+
+## 激光豆：整行贯穿，直接命中所有前方僵尸。
+func laser_row(pos: Vector3, lane: int, damage: float) -> int:
+	var attack := -dir
+	var hit := 0
+	for z in zombies:
+		if not is_instance_valid(z) or z.dead or z.dying > 0.0 or z.charmed or z.lane != lane:
+			continue
+		var ahead: float = (z.global_position.x - pos.x) * attack
+		if ahead < -0.2:
+			continue
+		z.damage(damage)
+		_burst(z.global_position + Vector3(0, 0.85, 0), Color("#b7f4e5"), 5, 1.2, 0.04)
+		hit += 1
+	var edge_x := float(yard["x1"]) if attack > 0.0 else float(yard["x0"])
+	var beam_len: float = maxf(absf(edge_x - pos.x), Data.TILE)
+	var beam_x: float = pos.x + (edge_x - pos.x) * 0.5
+	var beam := Art.box(self, Vector3(beam_len, 0.09, 0.09),
+		Vector3(beam_x, 0.9, Data.row_z(yard, lane)),
+		Art.additive(Color(0.35, 1.0, 0.82, 0.9)))
+	var tw := create_tween()
+	tw.tween_property(beam, "scale", Vector3(1.0, 2.5, 2.5), 0.12)
+	tw.parallel().tween_property(beam, "transparency", 1.0, 0.22)
+	tw.tween_callback(beam.queue_free)
+	if hit > 0:
+		App.sfx_at("shoot", pos, -7.0, 1.35)
+		if player != null:
+			player.add_shake(0.12)
+	return hit
+
+
+## 三叶草：一次性把所有飞行僵尸吹走。
+func blow_away() -> int:
+	var hit := 0
+	for z in zombies:
+		if not is_instance_valid(z) or z.dead or z.dying > 0.0 or z.flying <= 0.0:
+			continue
+		z.start_dying(true)
+		_burst(z.global_position + Vector3(0, z.flying + 0.65, 0), Color("#b9ecb7"), 14, 3.4, 0.09)
+		hit += 1
+	var wind := Art.quad(self, Vector2(float(yard["x1"]) - float(yard["x0"]), Data.TILE * 0.72),
+		Art.additive(Color(0.55, 1.0, 0.68, 0.26)),
+		Vector3((float(yard["x0"]) + float(yard["x1"])) * 0.5, 0.78, float(yard["z0"]) + Data.TILE * 0.5),
+		Vector3(-PI * 0.5, 0, 0))
+	var tw := create_tween()
+	tw.tween_property(wind, "scale", Vector3(1.0, 1.0, 1.8), 0.4)
+	tw.parallel().tween_property(wind, "transparency", 1.0, 0.48)
+	tw.tween_callback(wind.queue_free)
+	App.sfx_at("wind", player.eye_position() if player != null else global_position, -2.0, 1.2)
+	if player != null:
+		player.add_shake(0.16 if hit > 0 else 0.05)
+	return hit
+
+
+func melee_fx(pos: Vector3, color: Color) -> void:
+	_burst(pos + Vector3(0, 0.78, 0), color, 8, 1.7, 0.05)
+	if player != null:
+		player.add_shake(0.07)
 
 
 func freeze_all(duration: float) -> void:
@@ -1072,9 +1174,13 @@ func _update_suns(delta: float) -> void:
 	if sky_timer <= 0.0:
 		sky_timer = float(level["sky_sun"]) + randf_range(0.0, 4.0)
 		var c := randi() % cols
-		var r := randi() % rows
-		if Data.is_water(yard, r):
-			r = 0
+		var dry_rows: Array = []
+		for candidate in range(rows):
+			if not Data.is_water(yard, candidate):
+				dry_rows.append(candidate)
+		if dry_rows.is_empty():
+			return
+		var r: int = int(dry_rows[randi() % dry_rows.size()])
 		spawn_sun(Vector3(Data.col_x(yard, c), 9.0, Data.row_z(yard, r)), false)
 
 	var eye := player.eye_position()

@@ -61,6 +61,10 @@ func setup(p_kind: String, p_col: int, p_row: int, pos: Vector3, p_facing: float
 		timer = 0.8
 	elif kind == "magnetshroom":
 		timer = 2.5
+	elif kind in ["bonkchoy", "snapdragon", "laserbean"]:
+		timer = 0.35
+	elif kind == "blover":
+		timer = 0.0
 	elif kind == "potatomine":
 		armed = false
 		timer = 0.0
@@ -174,6 +178,40 @@ func tick(delta: float, m) -> void:
 					App.sfx_at("shoot", global_position, -12.0, 0.62)
 			else:
 				timer = min(timer, 0.2)
+		"bonkchoy":
+			var melee_target: ZombieUnit = m.frontmost_zombie(row, global_position.x, float(def.get("range", 1.9)))
+			if melee_target == null:
+				timer = min(timer, 0.18)
+				return
+			timer -= delta
+			if timer <= 0.0:
+				timer = float(def.get("cadence", 0.85))
+				melee_target.damage(float(def.get("melee", 65)))
+				m.melee_fx(melee_target.global_position, Color("#e7a54d"))
+				_recoil()
+				App.sfx_at("hit", melee_target.global_position, -8.0, randf_range(1.05, 1.22))
+		"snapdragon":
+			timer -= delta
+			if timer <= 0.0:
+				var hit_count: int = m.flame_cone(global_position, row, float(def.get("range", 3.3)), float(def.get("flame", 36)))
+				timer = float(def.get("cadence", 1.8)) if hit_count > 0 else 0.22
+				if hit_count > 0:
+					_recoil()
+		"laserbean":
+			var laser_target: ZombieUnit = m.frontmost_zombie(row, global_position.x, 99.0)
+			if laser_target == null:
+				timer = min(timer, 0.22)
+				return
+			timer -= delta
+			if timer <= 0.0:
+				timer = float(def.get("cadence", 2.4))
+				m.laser_row(global_position, row, float(def.get("beam", 72)))
+				_recoil()
+				App.sfx_at("shoot", global_position, -8.0, 1.35)
+		"blover":
+			if age > 0.75:
+				m.blow_away()
+				die()
 		"hypnoshroom":
 			pass
 		"iceshroom":

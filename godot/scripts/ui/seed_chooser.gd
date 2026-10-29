@@ -4,8 +4,8 @@ extends CanvasLayer
 ## Pre-level loadout screen: pick which seeds go into the belt.
 ##
 ## The bank shows every plant once, in Data.SEED_ORDER, so the cards never
-## move between levels. A level can force a few "must bring" seeds (the pool
-## level hands you a lilypad), and the rest of the slots are free.
+## move between levels. Every slot is optional, so the player can build a
+## specialised belt for the level instead of being forced into a recipe.
 
 signal confirmed(id: String, kinds: Array)
 signal cancelled
@@ -14,12 +14,11 @@ const SHEET := Vector2(1480, 856)
 const TILE := Vector2(126, 126)
 const SLOT := Vector2(92, 112)
 const GAP := 10
-const COLS := 8
+const COLS := 9
 const MAX_SLOTS := 9
 
 var level_id := ""
 var slots := 6
-var must: Array = []
 var picks: Array = []
 
 var root: Control
@@ -41,7 +40,6 @@ class SeedTile extends Control:
 	var display_name := ""
 	var cost := 100
 	var picked_index := -1
-	var locked := false
 	var disabled := false
 	var hover := false
 	var icon: PlantIcon
@@ -116,9 +114,6 @@ class SeedTile extends Control:
 			draw_circle(Vector2(size.x - 20, 20), 12.0, Color(0.12, 0.2, 0.12, 0.95))
 			draw_string(App.font_bold, Vector2(size.x - 30, 25), str(picked_index + 1),
 				HORIZONTAL_ALIGNMENT_CENTER, 20, 15, _accent)
-		elif locked:
-			draw_circle(Vector2(size.x - 20, 20), 9.0, Color(0.98, 0.84, 0.45, 0.85))
-
 		var name_col := Color("#f6eedb") if not disabled else Color(1, 1, 1, 0.32)
 		draw_string(App.font_bold, Vector2(10, 102), display_name, HORIZONTAL_ALIGNMENT_LEFT, 110, 13, name_col)
 		draw_circle(Vector2(15, 115), 5.5, Color(0.98, 0.8, 0.32, 0.9))
@@ -132,7 +127,6 @@ class SlotBox extends Control:
 	var index := 0
 	var kind := ""
 	var display_name := ""
-	var required := false
 	var hover := false
 	var pic: TextureRect
 	var _bg: StyleBoxFlat
@@ -183,11 +177,6 @@ class SlotBox extends Control:
 			Color(1, 1, 1, 0.5))
 		draw_string(App.font_body, Vector2(0, size.y - 8), display_name, HORIZONTAL_ALIGNMENT_CENTER, size.x, 12,
 			Color(1, 1, 1, 0.72))
-		if required:
-			draw_circle(Vector2(size.x - 12, 13), 10.0, Color(0.16, 0.13, 0.05, 0.95))
-			draw_string(App.font_bold, Vector2(size.x - 22, 18), "必", HORIZONTAL_ALIGNMENT_CENTER, 20, 12,
-				Color(0.98, 0.84, 0.45, 1.0))
-
 
 # --- panel -----------------------------------------------------------------
 
@@ -330,7 +319,7 @@ func _ready() -> void:
 	sheet.add_child(back)
 
 	var hint := Label.new()
-	hint.text = "必选植物已锁定 · 点击卡槽可取消 · 回车开始 · Esc 返回"
+	hint.text = "自由选择出战植物 · 点击卡槽可取消 · 回车开始 · Esc 返回"
 	hint.position = Vector2(40, SHEET.y - 20)
 	hint.add_theme_font_size_override("font_size", 13)
 	hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.34))
@@ -360,14 +349,10 @@ func open(id: String) -> void:
 	level_id = id
 	var level := Data.level(id)
 	slots = clampi(int(level.get("slots", 8)), 1, MAX_SLOTS)
-	must = Array(level.get("must", []))
 	var loadout := App.picks_for(id)
 	if loadout.is_empty():
 		loadout = Array(level["seeds"])
 	picks = []
-	for k in must:
-		if not picks.has(str(k)):
-			picks.append(str(k))
 	for k in loadout:
 		if picks.size() >= slots:
 			break
@@ -401,7 +386,6 @@ func _refresh() -> void:
 		var k: String = str(picks[i]) if i < picks.size() else ""
 		box.kind = k
 		box.display_name = str(Data.plant(k)["name"]) if k != "" else ""
-		box.required = k != "" and must.has(k)
 		box.pic.visible = k != ""
 		box.queue_redraw()
 
@@ -419,24 +403,17 @@ func _refresh() -> void:
 	for t in _tiles:
 		var tile: SeedTile = t
 		tile.picked_index = picks.find(tile.kind)
-		tile.locked = must.has(tile.kind)
 		tile.disabled = tile.picked_index < 0 and picks.size() >= slots
 		tile.queue_redraw()
 
 	_counter.text = "已选 %d / %d" % [picks.size(), slots]
 	var ok := picks.size() > 0
-	for k in must:
-		if not picks.has(str(k)):
-			ok = false
 	_start.disabled = not ok
 
 
 func _on_tile_tapped(kind: String) -> void:
 	var at := picks.find(kind)
 	if at >= 0:
-		if must.has(kind):
-			App.sfx("deny", -8.0)
-			return
 		picks.remove_at(at)
 		App.sfx("click", -8.0)
 	elif picks.size() >= slots:
@@ -451,10 +428,6 @@ func _on_tile_tapped(kind: String) -> void:
 func _on_slot_tapped(index: int) -> void:
 	if index >= picks.size():
 		return
-	var kind := str(picks[index])
-	if must.has(kind):
-		App.sfx("deny", -8.0)
-		return
 	picks.remove_at(index)
 	App.sfx("click", -8.0)
 	_refresh()
@@ -463,8 +436,6 @@ func _on_slot_tapped(index: int) -> void:
 func _reset_default() -> void:
 	var level := Data.level(level_id)
 	picks = []
-	for k in must:
-		picks.append(str(k))
 	for k in level["seeds"]:
 		if picks.size() >= slots:
 			break
@@ -477,12 +448,9 @@ func _reset_default() -> void:
 func _randomise() -> void:
 	var pool: Array = []
 	for k in Data.SEED_ORDER:
-		if not must.has(str(k)):
-			pool.append(str(k))
+		pool.append(str(k))
 	pool.shuffle()
 	picks = []
-	for k in must:
-		picks.append(str(k))
 	while picks.size() < slots and pool.size() > 0:
 		picks.append(str(pool.pop_back()))
 	# keep the belt ordered like the bank so it is easy to read
