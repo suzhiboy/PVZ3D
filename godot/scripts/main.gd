@@ -214,6 +214,8 @@ func _run_test(which: String) -> void:
 			_choice_test()
 		"flow":
 			_flow_test()
+		"campaign":
+			_campaign_expansion_test()
 		"plants":
 			_plants_test()
 		"zombies":
@@ -263,6 +265,77 @@ func _flow_test() -> void:
 	chooser._confirm()
 	print("[flow] endless belt=", match_ref.seeds.size(), " cards=", hud._cards.size(),
 		" endless=", match_ref.endless, " waves=", match_ref.level["waves"].size())
+	get_tree().quit()
+
+
+## Campaign contract for the expanded campaign. Keep this test data-driven so
+## adding a level updates the sequential flow automatically while the count,
+## uniqueness, and menu pagination requirements remain explicit.
+func _campaign_expansion_test() -> void:
+	var catalog: Array = Data.LEVELS
+	var validation := Data.validate_levels(catalog)
+	assert(bool(validation["ok"]), "campaign catalog validation failed: %s" % "; ".join(validation["errors"]))
+	assert(catalog.size() == 12, "campaign catalog must contain exactly 12 levels")
+	var malformed: Array = [catalog[0].duplicate(true)]
+	malformed[0]["id"] = ""
+	malformed[0]["yard"] = "moon"
+	malformed[0]["waves"] = [{"at": 4.0, "spawns": []}, {"at": 3.0, "spawns": [{"kind": "not-a-zombie"}]}]
+	var malformed_result := Data.validate_levels(malformed)
+	assert(not bool(malformed_result["ok"]), "validator must reject malformed catalog")
+
+	var ids := {}
+	for entry in catalog:
+		var id := str(entry.get("id", ""))
+		assert(id != "", "campaign level IDs must not be empty")
+		assert(not ids.has(id), "campaign level IDs must be unique: %s" % id)
+		ids[id] = true
+		assert(Data.level_exists(id), "campaign catalog ID must resolve in Data.level_exists: %s" % id)
+
+	# The stone menu owns the page boundaries. Keep this test coupled to that
+	# shared API so a four-entry hardcoded menu cannot pass by accident.
+	var page_size := TOMB_SCRIPT.LEVEL_PAGE_SIZE
+	var page_count := TOMB_SCRIPT.level_page_count(catalog.size())
+	assert(page_count == 3, "campaign menu must expose exactly three pages")
+	for page in range(page_count):
+		var bounds := TOMB_SCRIPT.level_page_bounds(page, catalog.size())
+		var first := bounds.x
+		var last := bounds.y
+		var entries: Array = catalog.slice(first, last)
+		assert(entries.size() <= page_size, "campaign menu page exceeds four entries")
+
+	# The legacy 2-D menu keeps the full catalog but only presents one page of
+	# cards at a time. Verify all three pages directly when the menu is available.
+	if menu != null and is_instance_valid(menu):
+		for page in range(page_count):
+			menu._set_page(page)
+			var visible_cards := 0
+			for card in menu.cards:
+				if card.visible:
+					visible_cards += 1
+			assert(visible_cards <= 4, "2D menu page exceeds four visible cards")
+
+	# Exercise the complete ordered flow from the first catalog entry to the
+	# final one.  Each selection must land on the corresponding chooser card.
+	for entry in catalog:
+		var id := str(entry["id"])
+		_choose_level(id)
+		assert(mode == "chooser", "campaign selection must open chooser: %s" % id)
+		assert(chooser.level_id == id, "chooser must open selected campaign level: %s" % id)
+		chooser.close()
+
+	# The next-level transition must advance every adjacent pair and leave the
+	# menu after the final campaign level.
+	for i in range(catalog.size() - 1):
+		current_id = str(catalog[i]["id"])
+		_next_level()
+		assert(mode == "chooser", "next-level must open chooser after %s" % current_id)
+		assert(chooser.level_id == str(catalog[i + 1]["id"]),
+			"next-level must advance to catalog successor")
+		chooser.close()
+	current_id = str(catalog[catalog.size() - 1]["id"])
+	_next_level()
+	assert(mode == "menu", "next-level after final campaign level must return to menu")
+	print("[campaign] catalog=", catalog.size(), " pages=", page_count, " flow=ok")
 	get_tree().quit()
 
 
