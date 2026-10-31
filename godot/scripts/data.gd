@@ -245,6 +245,9 @@ const LEVELS := [
 		"id": "front-1",
 		"name": "前院 · 清晨",
 		"subtitle": "第一波僵尸正在靠近，先种点向日葵吧",
+		"chapter": 1,
+		"difficulty": 1,
+		"goal": "建立阳光经济并守住前院",
 		"yard": "front",
 		"sky": "dawn",
 		"sun": 150,
@@ -266,6 +269,9 @@ const LEVELS := [
 		"id": "front-2",
 		"name": "前院 · 午后",
 		"subtitle": "铁桶僵尸来了，准备双发豌豆和樱桃炸弹",
+		"chapter": 1,
+		"difficulty": 2,
+		"goal": "用爆发火力击破装甲僵尸",
 		"yard": "front",
 		"sky": "noon",
 		"sun": 150,
@@ -291,6 +297,9 @@ const LEVELS := [
 		"id": "back-1",
 		"name": "后院 · 泳池",
 		"subtitle": "泳池两行必须先用睡莲铺出落脚点",
+		"chapter": 1,
+		"difficulty": 2,
+		"goal": "铺设睡莲并守住泳池两行",
 		"yard": "back",
 		"sky": "pool",
 		"sun": 175,
@@ -319,6 +328,9 @@ const LEVELS := [
 		"id": "front-3",
 		"name": "前院 · 深夜",
 		"subtitle": "天黑了，阳光稀少，橄榄球僵尸也来了",
+		"chapter": 1,
+		"difficulty": 3,
+		"goal": "在低光环境下击退重装僵尸",
 		"yard": "front",
 		"sky": "night",
 		"sun": 125,
@@ -335,10 +347,115 @@ const LEVELS := [
 				{"kind": "flag"}, {"kind": "football"}, {"kind": "bucket", "count": 2, "gap": 4.0},
 			]},
 			{"at": 190.0, "label": "最后一波", "big": true, "spawns": [
-				{"kind": "gargantuar"}, {"kind": "football"}, {"kind": "bucket", "count": 3, "gap": 3.0},
+				{"kind": "football"}, {"kind": "screendoor"}, {"kind": "bucket", "count": 3, "gap": 3.0},
 				{"kind": "balloon", "count": 2, "gap": 3.0}, {"kind": "cone", "count": 3, "gap": 2.0},
 			]},
 		],
+	},
+
+	{
+		"id": "front-4", "name": "前院 · 报纸风暴", "subtitle": "阳光紧张，报纸和撑杆僵尸会逼你快速应变", "chapter": 2, "difficulty": 3,
+		"goal": "用有限阳光守住报纸与撑杆的突袭", "yard": "front", "sky": "noon", "sun": 100, "sky_sun": 7.0, "par": 220.0,
+		"seeds": ["sunflower", "peashooter", "wallnut", "potatomine", "snowpea", "cherrybomb", "squash"], "slots": 7,
+		"waves": [
+			{"at": 16.0, "label": "试探攻势", "spawns": [{"kind": "basic", "count": 2, "gap": 4.0}]},
+			{"at": 46.0, "label": "报纸僵尸", "spawns": [{"kind": "newspaper"}, {"kind": "basic", "count": 2, "gap": 4.0}]},
+			{"at": 78.0, "label": "撑杆突袭", "spawns": [{"kind": "pole"}, {"kind": "newspaper"}]},
+			{"at": 112.0, "label": "低光压力", "spawns": [{"kind": "pole", "count": 2, "gap": 4.0}, {"kind": "cone", "count": 2, "gap": 3.0}]},
+			{"at": 148.0, "label": "预备决战", "spawns": [{"kind": "flag"}, {"kind": "newspaper", "count": 3, "gap": 3.0}, {"kind": "pole", "count": 2, "gap": 4.0}]},
+			{"at": 188.0, "label": "最后一波", "big": true, "spawns": [{"kind": "flag"}, {"kind": "pole", "count": 3, "gap": 3.0}, {"kind": "newspaper", "count": 3, "gap": 2.0}, {"kind": "cone", "count": 2, "gap": 3.0}]}
+		]
+	},
+	{
+		"id": "back-2", "name": "后院 · 气球泳池", "subtitle": "气球僵尸越过水面，铁桶僵尸紧随其后", "chapter": 2, "difficulty": 3,
+		"goal": "用三叶草清空气球并稳住泳池", "yard": "back", "sky": "pool", "sun": 175, "sky_sun": 8.5, "par": 225.0,
+		"seeds": ["sunflower", "peashooter", "lilypad", "blover", "snowpea", "wallnut", "tallnut", "melonpult"], "slots": 8,
+		"waves": [
+			{"at": 18.0, "label": "水面试探", "spawns": [{"kind": "basic", "count": 2, "gap": 5.0}]},
+			{"at": 50.0, "label": "气球出现", "spawns": [{"kind": "balloon", "lane": 2}, {"kind": "basic", "count": 2, "gap": 4.0}]},
+			{"at": 84.0, "label": "铁桶压境", "spawns": [{"kind": "bucket", "lane": 3}, {"kind": "balloon", "lane": 2}, {"kind": "cone"}]},
+			{"at": 118.0, "label": "双线水压", "spawns": [{"kind": "balloon", "count": 2, "gap": 4.0}, {"kind": "bucket", "count": 2, "gap": 5.0}]},
+			{"at": 154.0, "label": "预备决战", "spawns": [{"kind": "flag"}, {"kind": "screendoor"}, {"kind": "balloon", "count": 3, "gap": 3.0}]},
+			{"at": 194.0, "label": "最后一波", "big": true, "spawns": [{"kind": "flag"}, {"kind": "bucket", "count": 3, "gap": 4.0}, {"kind": "balloon", "count": 3, "gap": 3.0}, {"kind": "cone", "count": 2, "gap": 3.0}]}
+		]
+	},
+	{
+		"id": "front-5", "name": "前院 · 重装混战", "subtitle": "铁门、铁桶和橄榄球僵尸组成厚重防线", "chapter": 2, "difficulty": 4,
+		"goal": "集中火力拆穿多层装甲", "yard": "front", "sky": "noon", "sun": 200, "sky_sun": 8.0, "par": 240.0,
+		"seeds": ["sunflower", "peashooter", "repeater", "magnetshroom", "kernelpult", "melonpult", "wallnut", "cherrybomb", "jalapeno"], "slots": 9,
+		"waves": [
+			{"at": 18.0, "label": "装甲试探", "spawns": [{"kind": "cone", "count": 2, "gap": 4.0}]},
+			{"at": 50.0, "label": "铁桶僵尸", "spawns": [{"kind": "bucket"}, {"kind": "screendoor"}]},
+			{"at": 84.0, "label": "重装混合", "spawns": [{"kind": "football"}, {"kind": "bucket"}, {"kind": "cone", "count": 2, "gap": 3.0}]},
+			{"at": 120.0, "label": "装甲洪流", "spawns": [{"kind": "screendoor", "count": 2, "gap": 4.0}, {"kind": "football"}, {"kind": "bucket", "count": 2, "gap": 4.0}]},
+			{"at": 158.0, "label": "预备决战", "spawns": [{"kind": "flag"}, {"kind": "football", "count": 2, "gap": 5.0}, {"kind": "screendoor", "count": 2, "gap": 3.0}]},
+			{"at": 200.0, "label": "最后一波", "big": true, "spawns": [{"kind": "flag"}, {"kind": "football", "count": 2, "gap": 4.0}, {"kind": "bucket", "count": 3, "gap": 3.0}, {"kind": "screendoor", "count": 2, "gap": 3.0}]}
+		]
+	},
+	{
+		"id": "back-3", "name": "后院 · 潮汐交替", "subtitle": "陆地与水路轮番施压，别让阵线断开", "chapter": 2, "difficulty": 4,
+		"goal": "在陆地与泳池之间轮换防线", "yard": "back", "sky": "pool", "sun": 200, "sky_sun": 8.5, "par": 245.0,
+		"seeds": ["sunflower", "peashooter", "lilypad", "threepeater", "snapdragon", "wallnut", "pumpkin", "blover", "squash"], "slots": 9,
+		"waves": [
+			{"at": 18.0, "label": "陆路试探", "spawns": [{"kind": "basic", "lane": 0, "count": 2, "gap": 4.0}]},
+			{"at": 50.0, "label": "水路推进", "spawns": [{"kind": "basic", "lane": 2}, {"kind": "cone", "lane": 3}]},
+			{"at": 84.0, "label": "交替混合", "spawns": [{"kind": "pole", "lane": 1}, {"kind": "balloon", "lane": 2}, {"kind": "cone", "lane": 4}]},
+			{"at": 120.0, "label": "两面夹击", "spawns": [{"kind": "bucket", "lane": 0}, {"kind": "screendoor", "lane": 3}, {"kind": "balloon", "count": 2, "gap": 4.0}]},
+			{"at": 160.0, "label": "预备决战", "spawns": [{"kind": "flag"}, {"kind": "pole", "count": 2, "gap": 4.0}, {"kind": "bucket", "lane": 2}, {"kind": "cone", "lane": 4}]},
+			{"at": 202.0, "label": "最后一波", "big": true, "spawns": [{"kind": "flag"}, {"kind": "bucket", "count": 2, "gap": 4.0}, {"kind": "balloon", "count": 3, "gap": 3.0}, {"kind": "screendoor", "count": 2, "gap": 3.0}]}
+		]
+	},
+	{
+		"id": "front-6", "name": "前院 · 月下舞会", "subtitle": "夜色压低收入，舞王会在空隙中召来伴舞", "chapter": 3, "difficulty": 4,
+		"goal": "维持夜间经济并破解舞王节奏", "yard": "front", "sky": "night", "sun": 100, "sky_sun": 5.0, "par": 250.0,
+		"seeds": ["sunshroom", "puffshroom", "fumeshroom", "magnetshroom", "wallnut", "iceshroom", "hypnoshroom", "cherrybomb", "doomshroom"], "slots": 9,
+		"waves": [
+			{"at": 20.0, "label": "夜行试探", "spawns": [{"kind": "basic", "count": 2, "gap": 5.0}]},
+			{"at": 54.0, "label": "短程压力", "spawns": [{"kind": "cone", "count": 2, "gap": 4.0}, {"kind": "newspaper"}]},
+			{"at": 90.0, "label": "舞王登场", "spawns": [{"kind": "dancer"}, {"kind": "basic", "count": 2, "gap": 4.0}]},
+			{"at": 126.0, "label": "黑夜经济", "spawns": [{"kind": "bucket"}, {"kind": "dancer"}, {"kind": "newspaper", "count": 2, "gap": 3.0}]},
+			{"at": 166.0, "label": "预备决战", "spawns": [{"kind": "flag"}, {"kind": "dancer", "count": 2, "gap": 6.0}, {"kind": "bucket", "count": 2, "gap": 4.0}]},
+			{"at": 210.0, "label": "最后一波", "big": true, "spawns": [{"kind": "flag"}, {"kind": "dancer", "count": 2, "gap": 5.0}, {"kind": "football"}, {"kind": "bucket", "count": 3, "gap": 3.0}]}
+		]
+	},
+	{
+		"id": "back-4", "name": "后院 · 深水重压", "subtitle": "陆空混合的密集攻势会同时挤满泳池", "chapter": 3, "difficulty": 5,
+		"goal": "在密集泳池战中保持每条通道畅通", "yard": "back", "sky": "pool", "sun": 225, "sky_sun": 8.0, "par": 265.0,
+		"seeds": ["sunflower", "peashooter", "lilypad", "threepeater", "melonpult", "tallnut", "pumpkin", "blover", "jalapeno"], "slots": 9,
+		"waves": [
+			{"at": 18.0, "label": "密集试探", "spawns": [{"kind": "basic", "count": 3, "gap": 3.0}]},
+			{"at": 52.0, "label": "水面混合", "spawns": [{"kind": "cone", "lane": 2}, {"kind": "balloon", "lane": 3}, {"kind": "basic", "count": 2, "gap": 3.0}]},
+			{"at": 88.0, "label": "铁桶推进", "spawns": [{"kind": "bucket", "count": 2, "gap": 4.0}, {"kind": "screendoor"}]},
+			{"at": 126.0, "label": "全线拥挤", "spawns": [{"kind": "balloon", "count": 3, "gap": 3.0}, {"kind": "bucket", "count": 2, "gap": 4.0}, {"kind": "pole"}]},
+			{"at": 166.0, "label": "预备决战", "spawns": [{"kind": "flag"}, {"kind": "screendoor", "count": 2, "gap": 3.0}, {"kind": "balloon", "count": 2, "gap": 4.0}, {"kind": "bucket"}]},
+			{"at": 212.0, "label": "最后一波", "big": true, "spawns": [{"kind": "flag"}, {"kind": "bucket", "count": 3, "gap": 3.0}, {"kind": "balloon", "count": 3, "gap": 3.0}, {"kind": "screendoor", "count": 2, "gap": 3.0}, {"kind": "pole"}]}
+		]
+	},
+	{
+		"id": "front-7", "name": "前院 · 巨人警报", "subtitle": "警报拉响，巨人僵尸终于踏入前院", "chapter": 3, "difficulty": 5,
+		"goal": "为巨人僵尸准备足够的爆发与控制", "yard": "front", "sky": "noon", "sun": 250, "sky_sun": 8.5, "par": 275.0,
+		"seeds": ["sunflower", "repeater", "threepeater", "melonpult", "wallnut", "tallnut", "pumpkin", "cherrybomb", "jalapeno"], "slots": 9,
+		"waves": [
+			{"at": 20.0, "label": "警戒试探", "spawns": [{"kind": "cone", "count": 2, "gap": 4.0}]},
+			{"at": 56.0, "label": "重装信号", "spawns": [{"kind": "bucket"}, {"kind": "football"}]},
+			{"at": 94.0, "label": "多线混战", "spawns": [{"kind": "pole"}, {"kind": "screendoor"}, {"kind": "bucket", "count": 2, "gap": 4.0}]},
+			{"at": 134.0, "label": "巨人预兆", "spawns": [{"kind": "football", "count": 2, "gap": 5.0}, {"kind": "screendoor", "count": 2, "gap": 3.0}]},
+			{"at": 176.0, "label": "预备决战", "spawns": [{"kind": "flag"}, {"kind": "bucket", "count": 3, "gap": 3.0}, {"kind": "football"}]},
+			{"at": 220.0, "label": "最后一波", "big": true, "spawns": [{"kind": "flag"}, {"kind": "gargantuar"}, {"kind": "football", "count": 2, "gap": 4.0}, {"kind": "bucket", "count": 3, "gap": 3.0}]}
+		]
+	},
+	{
+		"id": "back-5", "name": "后院 · 最终泳池", "subtitle": "最后的泳池战役，所有路线同时告急", "chapter": 3, "difficulty": 5,
+		"goal": "守住泳池并完成最终旗帜波", "yard": "back", "sky": "pool", "sun": 250, "sky_sun": 8.0, "par": 290.0,
+		"seeds": ["sunflower", "lilypad", "threepeater", "melonpult", "tallnut", "pumpkin", "blover", "cherrybomb", "jalapeno"], "slots": 9,
+		"waves": [
+			{"at": 20.0, "label": "最终试探", "spawns": [{"kind": "basic", "count": 3, "gap": 3.0}]},
+			{"at": 58.0, "label": "水陆齐进", "spawns": [{"kind": "cone", "lane": 0}, {"kind": "balloon", "lane": 2}, {"kind": "pole", "lane": 4}]},
+			{"at": 98.0, "label": "第一轮混战", "spawns": [{"kind": "bucket", "count": 2, "gap": 4.0}, {"kind": "screendoor"}, {"kind": "balloon", "count": 2, "gap": 3.0}]},
+			{"at": 140.0, "label": "资源压力", "spawns": [{"kind": "football"}, {"kind": "bucket", "count": 3, "gap": 3.0}, {"kind": "balloon", "count": 3, "gap": 3.0}]},
+			{"at": 184.0, "label": "预备决战", "spawns": [{"kind": "flag"}, {"kind": "screendoor", "count": 2, "gap": 3.0}, {"kind": "football", "count": 2, "gap": 4.0}]},
+			{"at": 230.0, "label": "最后一波", "big": true, "spawns": [{"kind": "flag"}, {"kind": "gargantuar"}, {"kind": "bucket", "count": 3, "gap": 3.0}, {"kind": "balloon", "count": 3, "gap": 3.0}, {"kind": "screendoor", "count": 2, "gap": 3.0}]}
+		]
 	},
 ]
 
@@ -442,6 +559,86 @@ static func level_exists(id: String) -> bool:
 		if str(l.get("id", "")) == id:
 			return true
 	return false
+
+
+## Validate authored campaign data without mutating the source catalog.
+## Returns {ok: bool, errors: Array[String]} so tools can print concise logs.
+static func validate_levels(levels: Array, include_endless: bool = false) -> Dictionary:
+	var errors: Array[String] = []
+	var ids := {}
+	var skies := {"dawn": true, "noon": true, "night": true, "pool": true}
+	var yards := {"front": true, "back": true}
+	for index in range(levels.size()):
+		var level = levels[index]
+		var prefix := "level[%d]" % index
+		if typeof(level) != TYPE_DICTIONARY:
+			errors.append("%s must be object" % prefix)
+			continue
+		var id := str(level.get("id", "")).strip_edges()
+		if id == "":
+			errors.append("%s empty id" % prefix)
+		elif ids.has(id):
+			errors.append("duplicate id: %s" % id)
+		else:
+			ids[id] = true
+		var is_endless := bool(level.get("endless", false))
+		# Endless owns a separate generated wave source; skip it in campaign mode.
+		if is_endless and not include_endless:
+			continue
+		var required := ["name", "subtitle", "chapter", "difficulty", "goal", "yard", "sky", "sun", "sky_sun", "par", "seeds", "slots", "waves"]
+		if is_endless:
+			required = ["name", "subtitle", "yard", "sky", "sun", "sky_sun", "par", "seeds", "slots", "waves", "endless", "first_wave"]
+		for field in required:
+			if not level.has(field):
+				errors.append("%s missing %s" % [id if id != "" else prefix, field])
+		if is_endless:
+			if not bool(level.get("endless", false)):
+				errors.append("%s endless must be true" % (id if id != "" else prefix))
+			if float(level.get("first_wave", 0.0)) <= 0.0:
+				errors.append("%s invalid first_wave" % (id if id != "" else prefix))
+		if not yards.has(str(level.get("yard", ""))):
+			errors.append("%s unknown yard" % (id if id != "" else prefix))
+		if not skies.has(str(level.get("sky", ""))):
+			errors.append("%s unknown sky" % (id if id != "" else prefix))
+		var slots := int(level.get("slots", 0))
+		if slots < 1 or slots > 9:
+			errors.append("%s invalid slots" % (id if id != "" else prefix))
+		var seeds = level.get("seeds", [])
+		if typeof(seeds) != TYPE_ARRAY:
+			errors.append("%s seeds not array" % (id if id != "" else prefix))
+		else:
+			if seeds.size() == 0:
+				errors.append("%s empty seeds" % (id if id != "" else prefix))
+			for plant_id in seeds:
+				if not PLANTS.has(str(plant_id)):
+					errors.append("%s unknown plant: %s" % [id if id != "" else prefix, str(plant_id)])
+		var waves = level.get("waves", [])
+		if typeof(waves) != TYPE_ARRAY or (waves.is_empty() and not is_endless):
+			errors.append("%s empty waves" % (id if id != "" else prefix))
+			continue
+		var previous_at := -1.0
+		for wave_index in range(waves.size()):
+			var wave = waves[wave_index]
+			var wave_prefix := "%s wave[%d]" % [id if id != "" else prefix, wave_index]
+			if typeof(wave) != TYPE_DICTIONARY:
+				errors.append("%s must be object" % wave_prefix)
+				continue
+			var at := float(wave.get("at", -1.0))
+			if at < 0.0 or at <= previous_at:
+				errors.append("%s non-monotonic time" % wave_prefix)
+			previous_at = at
+			var spawns = wave.get("spawns", [])
+			if typeof(spawns) != TYPE_ARRAY or spawns.is_empty():
+				errors.append("%s empty spawns" % wave_prefix)
+				continue
+			for spawn in spawns:
+				if typeof(spawn) != TYPE_DICTIONARY:
+					errors.append("%s invalid spawn" % wave_prefix)
+					continue
+				var kind := str(spawn.get("kind", ""))
+				if not ZOMBIES.has(kind):
+					errors.append("%s unknown zombie: %s" % [wave_prefix, kind])
+	return {"ok": errors.is_empty(), "errors": errors}
 
 
 static func yard(name: String) -> Dictionary:
