@@ -265,6 +265,41 @@ class PlantRig extends RefCounted:
 	var parts: Array[MeshInstance3D] = []
 
 
+## Optional external replacements. Drop converted GLB files in the documented
+## paths and the game will prefer them; missing or invalid files keep the
+## procedural model, so an incomplete asset pack never breaks a match.
+const EXTERNAL_PLANT_MODELS := {
+	"sunflower": "res://assets/third_party/pvz/polyjo/sunflower.glb",
+	"peashooter": "res://assets/third_party/pvz/polyjo/peashooter.glb",
+	"wallnut": "res://assets/third_party/pvz/polyjo/wallnut.glb",
+	"snowpea": "res://assets/third_party/pvz/polyjo/snowpea.glb",
+	"repeater": "res://assets/third_party/pvz/polyjo/repeater.glb",
+}
+
+
+static func _external_plant_model(kind: String) -> PlantRig:
+	var path := str(EXTERNAL_PLANT_MODELS.get(kind, ""))
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	var packed := load(path) as PackedScene
+	if packed == null:
+		push_warning("External plant model is not a PackedScene: %s" % path)
+		return null
+	var instance := packed.instantiate()
+	if not instance is Node3D:
+		push_warning("External plant model root is not Node3D: %s" % path)
+		instance.queue_free()
+		return null
+	var rig := PlantRig.new()
+	rig.root = instance as Node3D
+	# Imported Blockbench models face +Z; gameplay plants face +X.
+	rig.root.rotation.y = PI * 0.5
+	rig.sway = rig.root
+	rig.head = rig.root
+	_collect(rig.root, rig.parts)
+	return rig
+
+
 static func _mound(parent: Node3D) -> void:
 	var dirt := toon(DIRT, {"bands": 2.0, "rim": 0.1})
 	cyl(parent, 0.26, 0.07, Vector3(0, 0.02, 0), dirt, Vector3.ZERO, 12)
@@ -367,6 +402,9 @@ static func _lily_disc(parent: Node3D, mat: Material) -> MeshInstance3D:
 
 
 static func plant_model(kind: String) -> PlantRig:
+	var external := _external_plant_model(kind)
+	if external != null:
+		return external
 	var rig := PlantRig.new()
 	var root := Node3D.new()
 	rig.root = root
