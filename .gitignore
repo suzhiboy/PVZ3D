@@ -11,6 +11,7 @@ build/
 # internal dev notes & agent memory (not project source)
 .learnings/
 .workbuddy/
+.superpowers/
 
 # godot dev screenshots (large binaries, not source)
 godot/screenshots/
