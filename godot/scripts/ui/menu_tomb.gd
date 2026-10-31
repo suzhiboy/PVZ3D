@@ -26,10 +26,30 @@ const GOLD := Color("#e8c96c")
 const DIM := Color("#6d7060")
 
 const LAYER := 2
+const LEVEL_PAGE_SIZE := 4
+
+## Shared by the menu and campaign flow tests so pagination cannot drift into
+## a second, silently different implementation.
+static func level_page_count(total_levels: int) -> int:
+	return maxi(1, ceili(float(maxi(0, total_levels)) / float(LEVEL_PAGE_SIZE)))
+
+
+static func level_page_bounds(page: int, total_levels: int) -> Vector2i:
+	var total := maxi(0, total_levels)
+	var page_count := level_page_count(total)
+	var safe_page := clampi(page, 0, page_count - 1)
+	var first := mini(safe_page * LEVEL_PAGE_SIZE, total)
+	return Vector2i(first, mini(first + LEVEL_PAGE_SIZE, total))
 
 var _root: Node3D
 var _items: Array = []
 var _levels: Array = []
+var _page := 0
+var _page_label: MeshInstance3D
+var _page_info_label: MeshInstance3D
+var _goal_label: MeshInstance3D
+var _page_prev: Dictionary = {}
+var _page_next: Dictionary = {}
 var _endless: Dictionary = {}
 var _continues: Dictionary = {}
 var _coin_label: MeshInstance3D
@@ -97,27 +117,7 @@ func look_point() -> Vector3:
 
 
 func refresh() -> void:
-	var prev_ok := true
-	for i in range(_levels.size()):
-		var row: Dictionary = _levels[i]
-		var id := str(row["id"])
-		var stars := App.stars_for(id)
-		var locked := not prev_ok
-		prev_ok = stars > 0
-		var plate: MeshInstance3D = row["plate"]
-		var label: MeshInstance3D = row["label"]
-		var tm := label.mesh as TextMesh
-		var lvl := Data.level(id)
-		var mark := "★★★".substr(0, stars) + "☆☆☆".substr(0, 3 - stars)
-		if locked:
-			tm.text = "%02d  %s   🔒" % [i + 1, str(lvl["name"])]
-			label.material_override = _ink_dim
-			plate.material_override = _plate_off
-		else:
-			tm.text = "%02d  %s   %s" % [i + 1, str(lvl["name"]), mark]
-			label.material_override = _ink_dark if stars > 0 else _ink
-			plate.material_override = _plate_on if stars > 0 else _plate_off
-		row["locked"] = locked
+	_refresh_levels()
 	if not _endless.is_empty():
 		var best := App.endless_best()
 		var elabel: MeshInstance3D = _endless["label"]
@@ -128,6 +128,79 @@ func refresh() -> void:
 		(_coin_label.mesh as TextMesh).text = "钱袋 %d" % App.wallet()
 	if _seen_label != null:
 		(_seen_label.mesh as TextMesh).text = "图鉴 %d/%d" % [App.seen_count(), App.species_total()]
+
+
+func _refresh_levels() -> void:
+	var page_count := level_page_count(Data.LEVELS.size())
+	# Catalogs can be extended or trimmed while the menu is alive (tests and
+	# content tools do this), so never leave the current page out of range.
+	_page = clampi(_page, 0, page_count - 1)
+	var bounds := level_page_bounds(_page, Data.LEVELS.size())
+	var visible_ids := {}
+	var chapter_min := 999999
+	var chapter_max := 0
+	var difficulty_min := 999999
+	var difficulty_max := 0
+	for slot in range(_levels.size()):
+		var row: Dictionary = _levels[slot]
+		var index := bounds.x + slot
+		var visible := index < bounds.y
+		var body: StaticBody3D = row["body"]
+		var plate: MeshInstance3D = row["plate"]
+		var label: MeshInstance3D = row["label"]
+		body.visible = visible
+		plate.visible = visible
+		label.visible = visible
+		if not visible:
+			row["id"] = ""
+			continue
+		var id := str(Data.LEVELS[index]["id"])
+		row["id"] = id
+		visible_ids[id] = true
+		var page_level: Dictionary = Data.LEVELS[index]
+		var page_chapter := int(page_level.get("chapter", 1))
+		var page_difficulty := int(page_level.get("difficulty", 1))
+		chapter_min = mini(chapter_min, page_chapter)
+		chapter_max = maxi(chapter_max, page_chapter)
+		difficulty_min = mini(difficulty_min, page_difficulty)
+		difficulty_max = maxi(difficulty_max, page_difficulty)
+		var stars := App.stars_for(id)
+		var locked := false
+		for prior in range(index):
+			if App.stars_for(str(Data.LEVELS[prior]["id"])) <= 0:
+				locked = true
+				break
+		var tm := label.mesh as TextMesh
+		var lvl := Data.level(id)
+		var mark := "★★★".substr(0, stars) + "☆☆☆".substr(0, 3 - stars)
+		if locked:
+			tm.text = "%02d  %s   🔒" % [index + 1, str(lvl["name"])]
+			label.material_override = _ink_dim
+			plate.material_override = _plate_off
+		else:
+			tm.text = "%02d  %s   %s" % [index + 1, str(lvl["name"]), mark]
+			label.material_override = _ink_dark if stars > 0 else _ink
+			plate.material_override = _plate_on if stars > 0 else _plate_off
+		row["locked"] = locked
+	if _page_label != null:
+		(_page_label.mesh as TextMesh).text = "%d / %d" % [_page + 1, page_count]
+		_page_label.visible = page_count > 1
+	if _hover.get("kind", "") == "level" and not visible_ids.has(str(_hover.get("id", ""))):
+		_set_hover({})
+	if _page_info_label != null:
+		var chapter_text := str(chapter_min) if chapter_max == chapter_min else "%d-%d" % [chapter_min, chapter_max]
+		var difficulty_text := "★".repeat(maxi(1, difficulty_min)) if difficulty_max == difficulty_min else "★".repeat(maxi(1, difficulty_min)) + "-" + "★".repeat(maxi(1, difficulty_max))
+		if bounds.x >= bounds.y:
+			chapter_text = "-"
+			difficulty_text = "-"
+		(_page_info_label.mesh as TextMesh).text = "第%s章 · 难度%s" % [chapter_text, difficulty_text]
+	if _goal_label != null and _hover.is_empty():
+		(_goal_label.mesh as TextMesh).text = "悬停关卡查看目标"
+	for nav in [_page_prev, _page_next]:
+		if not nav.is_empty():
+			(nav["body"] as StaticBody3D).visible = page_count > 1
+			(nav["plate"] as MeshInstance3D).visible = page_count > 1
+			(nav["label"] as MeshInstance3D).visible = page_count > 1
 
 
 func _refresh_continue() -> void:
@@ -170,6 +243,12 @@ func _set_hover(hit: Dictionary) -> void:
 	_hover = hit
 	if not _hover.is_empty():
 		_lift(_hover, true)
+	if _goal_label != null:
+		var hint := "悬停关卡查看目标"
+		if str(hit.get("kind", "")) == "level" and str(hit.get("id", "")) != "":
+			var level := Data.level(str(hit["id"]))
+			hint = "目标：" + str(level.get("goal", "完成本关防守"))
+		(_goal_label.mesh as TextMesh).text = hint
 
 
 func _lift(item: Dictionary, on: bool) -> void:
@@ -193,6 +272,14 @@ func _activate(item: Dictionary) -> void:
 	match str(item["kind"]):
 		"level":
 			level_chosen.emit(str(item["id"]))
+		"page_prev":
+			_set_hover({})
+			_page = maxi(0, _page - 1)
+			refresh()
+		"page_next":
+			_set_hover({})
+			_page = mini(level_page_count(Data.LEVELS.size()) - 1, _page + 1)
+			refresh()
 		"endless":
 			endless_chosen.emit()
 		"continue":
@@ -220,7 +307,10 @@ func _pick(screen: Vector2) -> Dictionary:
 	var body: Object = hit.get("collider")
 	for i in range(_items.size()):
 		var it: Dictionary = _items[i]
-		if it["body"] == body:
+		# Collision bodies remain in the tree when a page/entry is hidden.
+		# Visibility is part of the interaction contract, so hidden controls
+		# must never be activated by a stale ray hit.
+		if it["body"] == body and (it["body"] as Node3D).visible and (it["plate"] as Node3D).visible:
 			return it
 	return {}
 
@@ -278,12 +368,20 @@ func _build() -> void:
 	_text(_root, "第一人称 · 亲手走过庭院种下每一株", 0.052, Vector3(0, 1.285, 0.21), STONE_LIP.darkened(0.05))
 
 	# level plaques stand a little proud of the lip so they read as tablets
-	var rows := 4
+	var rows := LEVEL_PAGE_SIZE
 	for i in range(rows):
-		var id := str(Data.LEVELS[i]["id"]) if i < Data.LEVELS.size() else ""
-		_plate("level", id, Vector3(0, 1.12 - i * 0.155, 0.169), Vector3(1.10, 0.128, 0.04))
+		_plate("level", "", Vector3(0, 1.12 - i * 0.155, 0.169), Vector3(1.10, 0.128, 0.04))
 		_levels.append(_items[-1])
 	_endless = _plate("endless", "endless", Vector3(0, 1.12 - rows * 0.155, 0.169), Vector3(1.10, 0.128, 0.04))
+	_page_prev = _plate("page_prev", "page_prev", Vector3(-0.42, 0.45, 0.169), Vector3(0.24, 0.10, 0.04), 0.0)
+	_page_next = _plate("page_next", "page_next", Vector3(0.42, 0.45, 0.169), Vector3(0.24, 0.10, 0.04), 0.0)
+	var prev_text: TextMesh = ((_page_prev["label"] as MeshInstance3D).mesh as TextMesh)
+	var next_text: TextMesh = ((_page_next["label"] as MeshInstance3D).mesh as TextMesh)
+	prev_text.text = "‹"
+	next_text.text = "›"
+	_page_label = _text(_root, "1 / 1", 0.052, Vector3(0, 0.45, 0.21), STONE_LIP.darkened(0.15), true)
+	_page_info_label = _text(_root, "第1章 · 难度 ★", 0.043, Vector3(0, 0.535, 0.21), STONE_LIP.darkened(0.05), true)
+	_goal_label = _text(_root, "悬停关卡查看目标", 0.043, Vector3(0, 0.605, 0.21), STONE_LIP.darkened(0.18))
 
 	# coin bank on the plinth ledge
 	var coin := Art.cyl(_root, 0.075, 0.026, Vector3(-0.72, 0.44, 0.34), gold,

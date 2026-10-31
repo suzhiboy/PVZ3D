@@ -24,6 +24,11 @@ var _endless: EndlessCard
 var _purse: CoinPurse
 var _note: Label
 var _music: HSlider
+var _page := 0
+var _page_prev: Button
+var _page_next: Button
+var _page_label: Label
+const CARDS_PER_PAGE := 4
 
 
 ## 标题界面的钱袋读数：跨对局累计的金币余额，用来在戴夫的商店里买永久升级。
@@ -243,9 +248,27 @@ func _ready() -> void:
 		c.waves = lv["waves"].size()
 		c.chosen.connect(_on_level)
 		root.add_child(c)
-		c.position = Vector2(90, 256 + i * 110)
+		c.position = Vector2(90 + (i % 2) * 610, 256 + ((i % 4) / 2) * 110)
 		c.size = Vector2(580, 98)
 		cards.append(c)
+
+	_page_prev = Button.new()
+	_page_prev.text = "上一页"
+	_page_prev.position = Vector2(90, 650)
+	_page_prev.size = Vector2(120, 42)
+	_page_prev.pressed.connect(func() -> void: _set_page(_page - 1))
+	root.add_child(_page_prev)
+	_page_label = Label.new()
+	_page_label.position = Vector2(220, 660)
+	_page_label.size = Vector2(180, 24)
+	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(_page_label)
+	_page_next = Button.new()
+	_page_next.text = "下一页"
+	_page_next.position = Vector2(410, 650)
+	_page_next.size = Vector2(120, 42)
+	_page_next.pressed.connect(func() -> void: _set_page(_page + 1))
+	root.add_child(_page_next)
 
 	_purse = CoinPurse.new()
 	_purse.position = Vector2(1120, 114)
@@ -352,6 +375,7 @@ func refresh() -> void:
 		c.stars = App.stars_for(c.level_id)
 		c.locked = not prev_ok
 		prev_ok = c.stars > 0
+	_set_page(_page)
 	var any := false
 	for i in range(Data.LEVELS.size()):
 		if App.stars_for(str(Data.LEVELS[i]["id"])) > 0:
@@ -370,6 +394,16 @@ func refresh() -> void:
 			Data.PLANTS.size(), Data.zombie_kinds().size(),
 			App.seen_count(), App.species_total(), App.wallet(),
 		]
+
+func _set_page(value: int) -> void:
+	var page_count := maxi(1, ceili(float(cards.size()) / float(CARDS_PER_PAGE)))
+	_page = clampi(value, 0, page_count - 1)
+	for i in range(cards.size()):
+		cards[i].visible = i >= _page * CARDS_PER_PAGE and i < (_page + 1) * CARDS_PER_PAGE
+	if _page_label:
+		_page_label.text = "第 %d / %d 页" % [_page + 1, page_count]
+		_page_prev.disabled = _page == 0
+		_page_next.disabled = _page >= page_count - 1
 
 
 func show_menu(on: bool) -> void:
